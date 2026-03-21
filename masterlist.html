@@ -80,9 +80,16 @@
 
         <!-- Profile header -->
         <div class="profile-hero-header">
-          <h2 id="profile-name" style="font-size:1.5rem;"></h2>
-          <span id="profile-id" class="profile-hero-id"></span>
-          <span id="profile-rarity-badge"></span>
+          <div>
+            <h2 id="profile-name" style="font-size:1.5rem;"></h2>
+            <div style="margin-top:.3rem;font-size:.82rem;color:var(--text-muted);">
+              <i class="fas fa-user fa-fw" style="margin-right:.3rem;font-size:.75rem;"></i><a id="profile-owner-link" href="#" style="color:var(--text-muted);"></a>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
+            <span id="profile-id" class="profile-hero-id"></span>
+            <span id="profile-rarity-badge"></span>
+          </div>
         </div>
 
         <!-- Image -->
@@ -115,44 +122,80 @@
 
           <!-- INFO Tab -->
           <div class="tab-pane active" id="tab-info">
+
+            <!-- Top row: Left (Design Info + Sub Info) / Right (Traits + Notes) -->
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" class="info-grid">
 
               <!-- Left column -->
-              <div class="card" style="padding:1.25rem;">
-                <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">
-                  Design Info
+              <div style="display:flex;flex-direction:column;gap:1rem;">
+
+                <!-- Design Info -->
+                <div class="card" style="padding:1.25rem;">
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Design Info</div>
+                  <table class="info-table">
+                    <tr><td>Species</td><td id="info-species"></td></tr>
+                    <tr><td>Rarity</td><td id="info-rarity"></td></tr>
+                    <tr><td>Design Type</td><td id="info-designtype"></td></tr>
+                  </table>
                 </div>
-                <table class="info-table">
-                  <tr><td>Species</td><td id="info-species"></td></tr>
-                  <tr><td>Rarity</td><td id="info-rarity"></td></tr>
-                  <tr><td>Design Type</td><td id="info-designtype"></td></tr>
-                </table>
-                <hr>
-                <div>
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Traits</div>
-                  <div id="info-traits" class="traits-scroll text-pre" style="font-size:.85rem;color:var(--text-secondary);"></div>
+
+                <!-- Sub Info -->
+                <div class="card" style="padding:1.25rem;">
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Sub Info</div>
+                  <table class="info-table">
+                    <tr><td>하위 유형</td><td id="info-subtype"></td></tr>
+                    <tr><td>진영</td><td id="info-faction"></td></tr>
+                    <tr><td>성장 단계</td><td id="info-growth"></td></tr>
+                  </table>
                 </div>
+
               </div>
 
               <!-- Right column -->
-              <div class="card" style="padding:1.25rem;">
-                <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">
-                  Ownership
+              <div style="display:flex;flex-direction:column;gap:1rem;">
+
+                <!-- Traits -->
+                <div class="card" style="padding:1.25rem;flex:1;">
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Traits</div>
+                  <div id="info-traits" class="traits-scroll text-pre" style="font-size:.85rem;color:var(--text-secondary);"></div>
                 </div>
-                <table class="info-table">
-                  <tr><td>Owner</td><td><a id="info-owner" href="#"></a></td></tr>
-                  <tr><td>Artist</td><td><a id="info-artist" href="#"></a></td></tr>
-                  <tr><td>Designer</td><td><a id="info-designer" href="#"></a></td></tr>
-                  <tr><td>Value</td><td id="info-value"></td></tr>
-                  <tr><td>Status</td><td id="info-status"></td></tr>
-                </table>
-                <hr>
-                <div>
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Notes</div>
-                  <div id="info-notes" class="text-pre" style="font-size:.85rem;color:var(--text-secondary);"></div>
+
+                <!-- Notes -->
+                <div class="card" style="padding:1.25rem;">
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Notes</div>
+                  <div id="info-notes" class="text-pre" style="font-size:.85rem;color:var(--text-secondary);min-height:2rem;"></div>
                 </div>
+
               </div>
 
+            </div>
+
+            <!-- Bottom row: Credits + Value + Adopt Status -->
+            <div class="card" style="padding:1.25rem;margin-top:1rem;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;">
+
+                <!-- Credits -->
+                <div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Credits</div>
+                  <table class="info-table">
+                    <tr><td>Artist</td><td><a id="info-artist" href="#"></a></td></tr>
+                    <tr><td>Designer</td><td><a id="info-designer" href="#"></a></td></tr>
+                  </table>
+                </div>
+
+                <!-- Value -->
+                <div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Value</div>
+                  <div id="info-value" style="font-size:1.3rem;font-weight:700;color:var(--text-primary);font-family:var(--font-heading);"></div>
+                </div>
+
+                <!-- Adopt Status -->
+                <div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Adopt Status</div>
+                  <div id="info-status" style="font-size:.9rem;font-weight:600;color:var(--text-secondary);"></div>
+                </div>
+
+              </div>
             </div>
 
             <div style="margin-top:1rem;padding:.6rem 1rem;background:var(--bg-faded);border-radius:var(--radius);font-size:.8rem;text-align:center;color:var(--text-muted);">
@@ -236,6 +279,7 @@
         traits: 'Floppy Ears\nBig Eyes\nSpot Tail', owner: 'Alice', ownerlink: '#',
         artist: 'ArtistA', artistlink: '#', designer: 'DesignerA', designerlink: '#',
         value: '30', status: 'Resell', notes: '기본 캐릭터입니다.',
+        subtype: '야생종', faction: '중립', growth: '성체',
         image: 'https://picsum.photos/seed/c1/400/400',
         profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
         xp: 320, xpNext: 500,
@@ -246,6 +290,7 @@
         traits: 'Pointed Ears\nMagic Eyes\nGlowing Tail', owner: 'Bob', ownerlink: '#',
         artist: 'ArtistB', artistlink: '#', designer: 'DesignerB', designerlink: '#',
         value: '80', status: 'Trade', notes: '마법을 사용하는 특수 캐릭터.',
+        subtype: '마법종', faction: '마법사 길드', growth: '성체',
         image: 'https://picsum.photos/seed/c2/400/400',
         profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
         xp: 80, xpNext: 500,
@@ -367,21 +412,31 @@
       document.getElementById('profile-id').textContent = `#${char.id}`;
       document.getElementById('profile-rarity-badge').innerHTML = ARPGDEX.rarityBadge(char.rarity);
       document.getElementById('profile-img').src = char.image;
+      const ownerLinkEl = document.getElementById('profile-owner-link');
+      ownerLinkEl.textContent = char.owner;
+      ownerLinkEl.href = char.ownerlink || '#';
 
-      // Info tab
+      // Info tab — Design Info
       document.getElementById('info-species').textContent = char.species;
       document.getElementById('info-rarity').innerHTML = ARPGDEX.rarityBadge(char.rarity);
       document.getElementById('info-designtype').textContent = char.designtype;
+
+      // Info tab — Sub Info
+      document.getElementById('info-subtype').textContent = char.subtype || '-';
+      document.getElementById('info-faction').textContent = char.faction || '-';
+      document.getElementById('info-growth').textContent = char.growth || '-';
+
+      // Info tab — Traits & Notes
       document.getElementById('info-traits').textContent = char.traits;
-      document.getElementById('info-owner').textContent = char.owner;
-      document.getElementById('info-owner').href = char.ownerlink;
+      document.getElementById('info-notes').textContent = char.notes || '-';
+
+      // Info tab — Bottom: Credits, Value, Adopt Status
       document.getElementById('info-artist').textContent = char.artist;
       document.getElementById('info-artist').href = char.artistlink;
       document.getElementById('info-designer').textContent = char.designer;
       document.getElementById('info-designer').href = char.designerlink;
       document.getElementById('info-value').textContent = char.value ? `$${char.value}` : '-';
       document.getElementById('info-status').textContent = char.status || '-';
-      document.getElementById('info-notes').textContent = char.notes || '';
 
       // Profile doc
       const frame = document.getElementById('profile-doc-frame');
