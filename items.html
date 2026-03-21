@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARPGDEX — Item Catalogue</title>
+  <meta name="robots" content="noai, noimageai">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="arpgdex.css">
+</head>
+<body>
+  <div data-include="includes/header.html"></div>
+
+  <div id="main-container">
+
+    <div id="list-view">
+      <div class="page-header-card">
+        <h2><a href="items.html">Item Catalogue</a></h2>
+        <div style="margin-top:1rem;" class="cat-tabs" id="type-tabs">
+          <button class="cat-tab active" data-cat="all">All</button>
+          <button class="cat-tab" data-cat="Currency">Currency</button>
+          <button class="cat-tab" data-cat="MYO Slot">MYO Slot</button>
+          <button class="cat-tab" data-cat="Pet">Pet</button>
+          <button class="cat-tab" data-cat="Trait">Trait</button>
+          <button class="cat-tab" data-cat="Misc">Misc</button>
+        </div>
+        <div style="margin-top:.85rem;" class="filter-bar">
+          <select class="form-control" id="filter-rarity" style="max-width:160px;">
+            <option value="all">Rarity: All</option>
+            <option value="Common">Common</option>
+            <option value="Uncommon">Uncommon</option>
+            <option value="Rare">Rare</option>
+            <option value="Very Rare">Very Rare</option>
+            <option value="Legendary">Legendary</option>
+          </select>
+          <input class="form-control" type="search" id="search-input" placeholder="아이템명 검색…">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;" class="fade-in" id="items-grid"></div>
+      <div id="empty-state" class="empty-state hidden"><i class="fas fa-box-open"></i><p>아이템이 없습니다.</p></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <div id="profile-view" class="hidden">
+      <div style="margin-bottom:1rem;">
+        <button class="btn btn-ghost btn-sm" id="back-btn"><i class="fas fa-arrow-left"></i> 목록으로</button>
+      </div>
+      <div class="card fade-in">
+        <div class="card-header" style="padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+          <h2 id="profile-name" style="font-size:1.3rem;"></h2>
+          <span id="profile-rarity"></span>
+        </div>
+        <div style="padding:1.5rem 2rem;">
+          <div style="display:grid;grid-template-columns:180px 1fr;gap:2rem;align-items:start;" id="item-detail-grid">
+            <img id="item-img" src="" alt="" style="width:100%;border-radius:var(--radius);background:var(--bg-faded);">
+            <div>
+              <table class="info-table">
+                <tr><td>Item</td><td id="d-item"></td></tr>
+                <tr><td>Type</td><td id="d-type"></td></tr>
+                <tr><td>Rarity</td><td id="d-rarity"></td></tr>
+                <tr><td>Price</td><td id="d-price"></td></tr>
+              </table>
+              <hr>
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Description</div>
+              <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div data-include="includes/footer.html"></div>
+  <script src="js/base.js"></script>
+  <script type="module">
+    import { ARPGDEX } from './js/utils.js';
+
+    const ITEMS = [
+      { item: 'Gold Coin', type: 'Currency', rarity: 'Common', price: '1', description: '기본 재화 단위입니다.', image: 'https://picsum.photos/seed/i1/200/200' },
+      { item: 'Common MYO Slot', type: 'MYO Slot', rarity: 'Common', price: '10', description: '일반 MYO 슬롯입니다.', image: 'https://picsum.photos/seed/i2/200/200' },
+      { item: 'Rare MYO Slot', type: 'MYO Slot', rarity: 'Rare', price: '50', description: '레어 이하의 특성을 가진 MYO를 만들 수 있습니다.', image: 'https://picsum.photos/seed/i3/200/200' },
+      { item: 'Lucky Egg', type: 'Pet', rarity: 'Uncommon', price: '20', description: '부화시키면 귀여운 펫이 나옵니다.', image: 'https://picsum.photos/seed/i4/200/200' },
+      { item: 'Trait Potion', type: 'Trait', rarity: 'Rare', price: '30', description: '임의의 특성 하나를 추가할 수 있는 물약.', image: 'https://picsum.photos/seed/i5/200/200' },
+      { item: 'Legendary Shard', type: 'Misc', rarity: 'Legendary', price: '200', description: '전설급 아이템 제작에 사용됩니다.', image: 'https://picsum.photos/seed/i6/200/200' },
+    ];
+
+    const PER_PAGE = 12;
+    let state = { filtered: ITEMS, cat: 'all', rarity: 'all', search: '', page: 1 };
+
+    function filter() {
+      let arr = ITEMS;
+      if (state.cat !== 'all') arr = arr.filter(i => i.type === state.cat);
+      if (state.rarity !== 'all') arr = arr.filter(i => i.rarity === state.rarity);
+      if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(i => i.item.toLowerCase().includes(q)); }
+      state.filtered = arr; state.page = 1;
+    }
+
+    function render() {
+      const grid = document.getElementById('items-grid');
+      const empty = document.getElementById('empty-state');
+      const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
+      if (!items.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+      grid.innerHTML = items.map(it => `
+        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${it.item}')"
+          onmouseover="this.style.borderColor='var(--border-strong)';this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.borderColor='';this.style.transform=''">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:var(--font-heading);font-size:.85rem;">${it.item}</span>
+            ${ARPGDEX.rarityBadge(it.rarity)}
+          </div>
+          <div style="padding:1rem;display:flex;align-items:center;gap:1rem;">
+            <img src="${it.image}" alt="${it.item}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius);flex-shrink:0;">
+            <div style="font-size:.82rem;color:var(--text-secondary);line-height:1.5;">${it.description}</div>
+          </div>
+        </div>`).join('');
+      ARPGDEX.renderPagination(document.getElementById('pagination'), state.page, Math.ceil(state.filtered.length/PER_PAGE), p => { state.page=p; render(); window.scrollTo(0,0); });
+    }
+
+    window.showProfile = (name) => {
+      const it = ITEMS.find(x => x.item === name); if (!it) return;
+      history.pushState({}, '', `?profile=${encodeURIComponent(name)}`);
+      document.getElementById('list-view').classList.add('hidden');
+      document.getElementById('profile-view').classList.remove('hidden');
+      document.getElementById('profile-name').textContent = it.item;
+      document.getElementById('profile-rarity').innerHTML = ARPGDEX.rarityBadge(it.rarity);
+      document.getElementById('item-img').src = it.image;
+      document.getElementById('d-item').textContent = it.item;
+      document.getElementById('d-type').textContent = it.type;
+      document.getElementById('d-rarity').innerHTML = ARPGDEX.rarityBadge(it.rarity);
+      document.getElementById('d-price').textContent = it.price ? `$${it.price}` : 'Free';
+      document.getElementById('d-desc').textContent = it.description;
+      window.scrollTo(0,0);
+    };
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      history.pushState({}, '', 'items.html');
+      document.getElementById('profile-view').classList.add('hidden');
+      document.getElementById('list-view').classList.remove('hidden');
+    });
+    window.addEventListener('popstate', () => {
+      const p = ARPGDEX.getParam('profile');
+      if (p) showProfile(p);
+      else { document.getElementById('profile-view').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); }
+    });
+
+    document.querySelectorAll('[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-cat]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active'); state.cat = btn.dataset.cat; filter(); render();
+      });
+    });
+    document.getElementById('filter-rarity').addEventListener('change', e => { state.rarity = e.target.value; filter(); render(); });
+    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => { state.search = e.target.value; filter(); render(); }));
+    document.addEventListener('DOMContentLoaded', () => {
+      const p = ARPGDEX.getParam('profile');
+      filter();
+      if (p) showProfile(p); else render();
+    });
+  </script>
+</body>
+</html>

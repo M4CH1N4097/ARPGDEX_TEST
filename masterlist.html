@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARPGDEX — Species Masterlist</title>
+  <meta name="robots" content="noai, noimageai">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="arpgdex.css">
+</head>
+<body>
+
+  <div data-include="includes/header.html"></div>
+
+  <div id="main-container">
+
+    <!-- ============================================================
+    LIST VIEW
+    ============================================================= -->
+    <div id="list-view">
+
+      <div class="page-header-card">
+        <h2><a href="masterlist.html">Species Masterlist</a></h2>
+
+        <!-- Folder tabs (species) -->
+        <div style="margin-top:1rem;" class="cat-tabs" id="species-tabs">
+          <button class="cat-tab active" data-folder="all">전체</button>
+          <button class="cat-tab" data-folder="dog">Dog</button>
+          <button class="cat-tab" data-folder="cat">Cat</button>
+          <button class="cat-tab" data-folder="bunny">Bunny</button>
+        </div>
+
+        <!-- Filters row -->
+        <div style="margin-top:.85rem;" class="filter-bar">
+          <select class="form-control" id="filter-designtype" style="max-width:180px;">
+            <option value="all">Design Type: All</option>
+            <option value="Official Design">Official Design</option>
+            <option value="Guest Design">Guest Design</option>
+            <option value="MYO Slot">MYO Slot</option>
+            <option value="MYO Design">MYO Design</option>
+          </select>
+          <select class="form-control" id="filter-rarity" style="max-width:160px;">
+            <option value="all">Rarity: All</option>
+            <option value="Common">Common</option>
+            <option value="Uncommon">Uncommon</option>
+            <option value="Rare">Rare</option>
+            <option value="Very Rare">Very Rare</option>
+            <option value="Legendary">Legendary</option>
+          </select>
+          <select class="form-control" id="filter-status" style="max-width:160px;">
+            <option value="all">Status: All</option>
+            <option value="Resell">Resell</option>
+            <option value="Trade">Trade</option>
+            <option value="Gift">Gift</option>
+            <option value="Voided">Voided</option>
+          </select>
+          <input class="form-control" type="search" id="search-input" placeholder="ID, 디자인명, 소유자, 특성 검색…">
+        </div>
+      </div>
+
+      <div class="gallery-grid fade-in" id="masterlist-grid"></div>
+      <div id="empty-state" class="empty-state hidden"><i class="fas fa-dragon"></i><p>항목이 없습니다.</p></div>
+      <div class="pagination" id="pagination"></div>
+
+    </div>
+
+    <!-- ============================================================
+    PROFILE VIEW
+    ============================================================= -->
+    <div id="profile-view" class="hidden">
+
+      <div style="margin-bottom:1rem;">
+        <button class="btn btn-ghost btn-sm" id="back-btn">
+          <i class="fas fa-arrow-left"></i> 목록으로
+        </button>
+      </div>
+
+      <div class="profile-hero fade-in">
+
+        <!-- Profile header -->
+        <div class="profile-hero-header">
+          <h2 id="profile-name" style="font-size:1.5rem;"></h2>
+          <span id="profile-id" class="profile-hero-id"></span>
+          <span id="profile-rarity-badge"></span>
+        </div>
+
+        <!-- Image -->
+        <div class="profile-hero-img" style="margin:1.25rem 0;">
+          <img id="profile-img" src="" alt="">
+        </div>
+
+        <!-- Prev/Next -->
+        <div class="prevnext-bar" id="prevnext">
+          <a href="#" id="prev-entry" style="display:none;">
+            <i class="fas fa-chevron-left"></i> <span id="prev-name"></span>
+          </a>
+          <span></span>
+          <a href="#" id="next-entry" style="display:none;">
+            <span id="next-name"></span> <i class="fas fa-chevron-right"></i>
+          </a>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-nav" id="profile-tab-nav">
+          <button class="tab-btn active" data-tab="info">Info</button>
+          <button class="tab-btn" data-tab="profile">Profile</button>
+          <button class="tab-btn" data-tab="gallery">Gallery</button>
+          <button class="tab-btn" data-tab="logs">Logs</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div style="padding:1.5rem 2rem;">
+
+          <!-- INFO Tab -->
+          <div class="tab-pane active" id="tab-info">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" class="info-grid">
+
+              <!-- Left column -->
+              <div class="card" style="padding:1.25rem;">
+                <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">
+                  Design Info
+                </div>
+                <table class="info-table">
+                  <tr><td>Species</td><td id="info-species"></td></tr>
+                  <tr><td>Rarity</td><td id="info-rarity"></td></tr>
+                  <tr><td>Design Type</td><td id="info-designtype"></td></tr>
+                </table>
+                <hr>
+                <div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Traits</div>
+                  <div id="info-traits" class="traits-scroll text-pre" style="font-size:.85rem;color:var(--text-secondary);"></div>
+                </div>
+              </div>
+
+              <!-- Right column -->
+              <div class="card" style="padding:1.25rem;">
+                <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">
+                  Ownership
+                </div>
+                <table class="info-table">
+                  <tr><td>Owner</td><td><a id="info-owner" href="#"></a></td></tr>
+                  <tr><td>Artist</td><td><a id="info-artist" href="#"></a></td></tr>
+                  <tr><td>Designer</td><td><a id="info-designer" href="#"></a></td></tr>
+                  <tr><td>Value</td><td id="info-value"></td></tr>
+                  <tr><td>Status</td><td id="info-status"></td></tr>
+                </table>
+                <hr>
+                <div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Notes</div>
+                  <div id="info-notes" class="text-pre" style="font-size:.85rem;color:var(--text-secondary);"></div>
+                </div>
+              </div>
+
+            </div>
+
+            <div style="margin-top:1rem;padding:.6rem 1rem;background:var(--bg-faded);border-radius:var(--radius);font-size:.8rem;text-align:center;color:var(--text-muted);">
+              정보 수정이 필요하신 경우 <a href="#">이 곳</a>에서 신청해 주세요.
+            </div>
+          </div>
+
+          <!-- PROFILE Tab -->
+          <div class="tab-pane" id="tab-profile">
+            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">
+              소유자가 작성한 캐릭터 프로필입니다.
+            </div>
+            <iframe id="profile-doc-frame" class="embed-frame" src="" allowfullscreen style="min-height:600px;"></iframe>
+          </div>
+
+          <!-- GALLERY Tab -->
+          <div class="tab-pane" id="tab-gallery">
+            <div class="post-grid" id="char-gallery-grid"></div>
+            <div class="empty-state hidden" id="char-gallery-empty">
+              <i class="fas fa-image"></i>
+              <p>이 캐릭터가 등장하는 갤러리 게시물이 없습니다.</p>
+            </div>
+          </div>
+
+          <!-- LOGS Tab -->
+          <div class="tab-pane" id="tab-logs">
+            <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:1rem;">
+              Transaction Log
+            </div>
+            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">
+              <div class="log-row" style="font-weight:700;color:var(--text-secondary);">
+                <span>Timestamp</span><span>Reason</span>
+              </div>
+            </div>
+            <div id="log-list"></div>
+            <div class="empty-state hidden" id="log-empty">
+              <i class="fas fa-scroll"></i>
+              <p>거래 기록이 없습니다.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div data-include="includes/footer.html"></div>
+
+  <script src="js/base.js"></script>
+  <script type="module">
+    import { ARPGDEX } from './js/utils.js';
+
+    /* ============================================================
+       MOCK DATA — replace with ARPGDEX.importSheet('masterlist')
+    ============================================================= */
+    const GALLERY_DATA_ALL = [
+      { id: 'G-001', title: '봄날의 소풍', author: 'Alice', category: '일반', characters: 'CHA-001, CHA-002', thumb: 'https://picsum.photos/seed/gal1/400/225' },
+      { id: 'G-002', title: '달빛 아래서', author: 'Bob', category: '프롬프트', characters: 'CHA-003', thumb: 'https://picsum.photos/seed/gal2/400/225' },
+      { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', characters: 'CHA-001, CHA-004', thumb: 'https://picsum.photos/seed/gal3/400/225' },
+      { id: 'G-004', title: '겨울 축제', author: 'Dave', category: '프롬프트', characters: 'CHA-002, CHA-003', thumb: 'https://picsum.photos/seed/gal4/400/225' },
+    ];
+
+    const ML_DATA = [
+      {
+        design: 'CHA-001', id: '001', species: 'Dog', rarity: 'Common', designtype: 'Official Design',
+        traits: 'Floppy Ears\nBig Eyes\nSpot Tail', owner: 'Alice', ownerlink: '#',
+        artist: 'ArtistA', artistlink: '#', designer: 'DesignerA', designerlink: '#',
+        value: '30', status: 'Resell', notes: '기본 캐릭터입니다.',
+        image: 'https://picsum.photos/seed/c1/400/400',
+        profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
+      },
+      {
+        design: 'CHA-002', id: '002', species: 'Cat', rarity: 'Rare', designtype: 'MYO Design',
+        traits: 'Pointed Ears\nMagic Eyes\nGlowing Tail', owner: 'Bob', ownerlink: '#',
+        artist: 'ArtistB', artistlink: '#', designer: 'DesignerB', designerlink: '#',
+        value: '80', status: 'Trade', notes: '마법을 사용하는 특수 캐릭터.',
+        image: 'https://picsum.photos/seed/c2/400/400',
+        profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
+      },
+      {
+        design: 'CHA-003', id: '003', species: 'Bunny', rarity: 'Uncommon', designtype: 'Guest Design',
+        traits: 'Long Ears\nSweet Eyes\nFluffy Tail', owner: 'Carol', ownerlink: '#',
+        artist: 'ArtistC', artistlink: '#', designer: 'DesignerC', designerlink: '#',
+        value: '50', status: 'Gift', notes: '',
+        image: 'https://picsum.photos/seed/c3/400/400',
+        profiledoc: '',
+      },
+      {
+        design: 'CHA-004', id: '004', species: 'Dog', rarity: 'Legendary', designtype: 'Official Design',
+        traits: 'Dragon Wings\nHorn\nFire Tail', owner: 'Dave', ownerlink: '#',
+        artist: 'ArtistA', artistlink: '#', designer: 'DesignerA', designerlink: '#',
+        value: '300', status: 'Resell', notes: '전설급 디자인.',
+        image: 'https://picsum.photos/seed/c4/400/400',
+        profiledoc: '',
+      },
+      {
+        design: 'CHA-005', id: '005', species: 'Cat', rarity: 'Very Rare', designtype: 'MYO Design',
+        traits: 'Star Ears\nCosmic Eyes', owner: 'Eve', ownerlink: '#',
+        artist: 'ArtistD', artistlink: '#', designer: 'DesignerD', designerlink: '#',
+        value: '150', status: 'Trade', notes: '',
+        image: 'https://picsum.photos/seed/c5/400/400',
+        profiledoc: '',
+      },
+    ];
+
+    const LOG_DATA = {
+      'CHA-001': [
+        { timestamp: '2024-01-15 12:00', reason: 'Initial registration' },
+        { timestamp: '2024-03-20 09:30', reason: 'Transferred to Alice' },
+      ],
+      'CHA-002': [
+        { timestamp: '2024-02-10 15:00', reason: 'MYO approved' },
+      ],
+    };
+
+    /* ============================================================
+       State
+    ============================================================= */
+    const PER_PAGE = 12;
+    let state = {
+      filtered: ML_DATA,
+      folder: 'all',
+      designtype: 'all',
+      rarity: 'all',
+      status: 'all',
+      search: '',
+      page: 1,
+    };
+
+    /* ============================================================
+       Filter
+    ============================================================= */
+    function filterData() {
+      let arr = ML_DATA;
+      if (state.folder !== 'all') arr = arr.filter(d => d.species.toLowerCase() === state.folder);
+      if (state.designtype !== 'all') arr = arr.filter(d => d.designtype === state.designtype);
+      if (state.rarity !== 'all') arr = arr.filter(d => d.rarity === state.rarity);
+      if (state.status !== 'all') arr = arr.filter(d => d.status === state.status);
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        arr = arr.filter(d => (d.design + d.owner + d.artist + d.traits).toLowerCase().includes(q));
+      }
+      state.filtered = arr;
+      state.page = 1;
+    }
+
+    /* ============================================================
+       Render Grid
+    ============================================================= */
+    function renderGrid() {
+      const grid = document.getElementById('masterlist-grid');
+      const empty = document.getElementById('empty-state');
+      const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
+      if (items.length === 0) {
+        grid.innerHTML = ''; empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        grid.innerHTML = items.map(d => `
+          <div class="gallery-card" onclick="showProfile('${d.design}')">
+            <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
+            <div class="gallery-card-info">
+              <div class="gallery-card-title">${d.design}</div>
+              <div class="gallery-card-sub">${ARPGDEX.rarityBadge(d.rarity)} ${d.owner}</div>
+            </div>
+          </div>`).join('');
+      }
+      ARPGDEX.renderPagination(
+        document.getElementById('pagination'),
+        state.page,
+        Math.ceil(state.filtered.length / PER_PAGE),
+        (p) => { state.page = p; renderGrid(); window.scrollTo(0,0); }
+      );
+    }
+
+    /* ============================================================
+       Show Profile
+    ============================================================= */
+    window.showProfile = (designId) => {
+      const char = ML_DATA.find(d => d.design === designId);
+      if (!char) return;
+      history.pushState({profile: designId}, '', `?profile=${encodeURIComponent(designId)}`);
+      document.getElementById('list-view').classList.add('hidden');
+      document.getElementById('profile-view').classList.remove('hidden');
+
+      // Fill header
+      document.getElementById('profile-name').textContent = char.design;
+      document.getElementById('profile-id').textContent = `#${char.id}`;
+      document.getElementById('profile-rarity-badge').innerHTML = ARPGDEX.rarityBadge(char.rarity);
+      document.getElementById('profile-img').src = char.image;
+
+      // Info tab
+      document.getElementById('info-species').textContent = char.species;
+      document.getElementById('info-rarity').innerHTML = ARPGDEX.rarityBadge(char.rarity);
+      document.getElementById('info-designtype').textContent = char.designtype;
+      document.getElementById('info-traits').textContent = char.traits;
+      document.getElementById('info-owner').textContent = char.owner;
+      document.getElementById('info-owner').href = char.ownerlink;
+      document.getElementById('info-artist').textContent = char.artist;
+      document.getElementById('info-artist').href = char.artistlink;
+      document.getElementById('info-designer').textContent = char.designer;
+      document.getElementById('info-designer').href = char.designerlink;
+      document.getElementById('info-value').textContent = char.value ? `$${char.value}` : '-';
+      document.getElementById('info-status').textContent = char.status || '-';
+      document.getElementById('info-notes').textContent = char.notes || '';
+
+      // Profile doc
+      const frame = document.getElementById('profile-doc-frame');
+      if (char.profiledoc) {
+        frame.src = char.profiledoc;
+        frame.style.display = '';
+      } else {
+        frame.src = '';
+        frame.style.display = 'none';
+        document.getElementById('tab-profile').innerHTML = '<div class="empty-state"><i class="fas fa-file-circle-question"></i><p>등록된 프로필 문서가 없습니다.</p></div>';
+      }
+
+      // Gallery tab — filter by character code
+      const charGallery = GALLERY_DATA_ALL.filter(g =>
+        g.characters.split(',').map(c => c.trim()).includes(designId)
+      );
+      const cgGrid = document.getElementById('char-gallery-grid');
+      const cgEmpty = document.getElementById('char-gallery-empty');
+      if (charGallery.length === 0) {
+        cgGrid.innerHTML = ''; cgEmpty.classList.remove('hidden');
+      } else {
+        cgEmpty.classList.add('hidden');
+        cgGrid.innerHTML = charGallery.map(g => `
+          <a class="post-card" href="gallery.html?post=${encodeURIComponent(g.id)}">
+            <div class="post-card-thumb">
+              <img src="${g.thumb}" alt="${g.title}" loading="lazy">
+              <div class="post-card-cat"><span class="badge badge-category">${g.category}</span></div>
+            </div>
+            <div class="post-card-body">
+              <div class="post-card-title">${g.title}</div>
+              <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${g.author}</div>
+            </div>
+          </a>`).join('');
+      }
+
+      // Logs
+      const logs = LOG_DATA[designId] || [];
+      const logList = document.getElementById('log-list');
+      const logEmpty = document.getElementById('log-empty');
+      if (logs.length === 0) {
+        logList.innerHTML = ''; logEmpty.classList.remove('hidden');
+      } else {
+        logEmpty.classList.add('hidden');
+        logList.innerHTML = logs.map(l => `
+          <div class="log-row">
+            <span class="log-time">${l.timestamp}</span>
+            <span>${l.reason}</span>
+          </div>`).join('');
+      }
+
+      // Prev/Next
+      const idx = state.filtered.findIndex(d => d.design === designId);
+      const prev = state.filtered[idx - 1];
+      const next = state.filtered[idx + 1];
+      const prevEl = document.getElementById('prev-entry');
+      const nextEl = document.getElementById('next-entry');
+      if (prev) {
+        prevEl.style.display = '';
+        document.getElementById('prev-name').textContent = prev.design;
+        prevEl.onclick = (e) => { e.preventDefault(); showProfile(prev.design); };
+      } else prevEl.style.display = 'none';
+      if (next) {
+        nextEl.style.display = '';
+        document.getElementById('next-name').textContent = next.design;
+        nextEl.onclick = (e) => { e.preventDefault(); showProfile(next.design); };
+      } else nextEl.style.display = 'none';
+
+      // Reset tabs
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelector('.tab-btn[data-tab="info"]').classList.add('active');
+      document.getElementById('tab-info').classList.add('active');
+
+      window.scrollTo(0, 0);
+    };
+
+    /* Tab switching */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    /* Back */
+    document.getElementById('back-btn').addEventListener('click', () => {
+      history.pushState({}, '', 'masterlist.html');
+      document.getElementById('profile-view').classList.add('hidden');
+      document.getElementById('list-view').classList.remove('hidden');
+    });
+    window.addEventListener('popstate', () => {
+      const profileId = ARPGDEX.getParam('profile');
+      if (profileId) showProfile(profileId);
+      else {
+        document.getElementById('profile-view').classList.add('hidden');
+        document.getElementById('list-view').classList.remove('hidden');
+      }
+    });
+
+    /* Filter events */
+    ['designtype','rarity','status'].forEach(key => {
+      document.getElementById(`filter-${key}`).addEventListener('change', (e) => {
+        state[key] = e.target.value; filterData(); renderGrid();
+      });
+    });
+    document.getElementById('search-input').addEventListener('input',
+      ARPGDEX.debounce((e) => { state.search = e.target.value; filterData(); renderGrid(); })
+    );
+    document.querySelectorAll('[data-folder]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-folder]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.folder = btn.dataset.folder; filterData(); renderGrid();
+      });
+    });
+
+    /* Init */
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileId = ARPGDEX.getParam('profile');
+      filterData();
+      if (profileId) showProfile(profileId);
+      else renderGrid();
+    });
+
+    /* Responsive info-grid */
+    function checkInfoGrid() {
+      const g = document.querySelector('.info-grid');
+      if (!g) return;
+      g.style.gridTemplateColumns = window.innerWidth < 640 ? '1fr' : '1fr 1fr';
+    }
+    window.addEventListener('resize', checkInfoGrid);
+    document.addEventListener('DOMContentLoaded', checkInfoGrid);
+
+  </script>
+</body>
+</html>

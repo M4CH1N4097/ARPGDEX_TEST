@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARPGDEX</title>
+  <meta name="robots" content="noai, noimageai">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="arpgdex.css">
+</head>
+<body>
+
+  <div data-include="includes/header.html"></div>
+
+  <div id="main-container">
+
+    <!-- Hero -->
+    <div class="hero-banner fade-in">
+      <div class="hero-banner-content">
+        <div class="hero-title">ARPGDEX</div>
+        <div class="hero-sub">창작 종족 ARPG 관리 시스템</div>
+        <div style="margin-top:1.5rem; display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap;">
+          <a href="masterlist.html" class="btn btn-primary"><i class="fas fa-dragon"></i> 마스터리스트</a>
+          <a href="gallery.html" class="btn btn-outline"><i class="fas fa-images"></i> 갤러리</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="section-card fade-in" style="animation-delay:.05s">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.75rem;">
+        <div>
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">About</div>
+          <ul class="link-list">
+            <li><a href="world.html"><i class="fas fa-globe fa-fw" style="margin-right:.4rem;"></i>World</a></li>
+            <li><a href="species.html"><i class="fas fa-paw fa-fw" style="margin-right:.4rem;"></i>Species</a></li>
+            <li><a href="masterlist.html"><i class="fas fa-dragon fa-fw" style="margin-right:.4rem;"></i>Designs</a></li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">Community</div>
+          <ul class="link-list">
+            <li><a href="#"><i class="fas fa-floppy-disk fa-fw" style="margin-right:.4rem;"></i>Toyhou.se</a></li>
+            <li><a href="#"><i class="fab fa-discord fa-fw" style="margin-right:.4rem;"></i>Discord</a></li>
+            <li><a href="prompts.html"><i class="fas fa-scroll fa-fw" style="margin-right:.4rem;"></i>Prompts</a></li>
+            <li><a href="gallery.html"><i class="fas fa-images fa-fw" style="margin-right:.4rem;"></i>Gallery</a></li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">Resources</div>
+          <ul class="link-list">
+            <li><a href="faq.html"><i class="fas fa-circle-question fa-fw" style="margin-right:.4rem;"></i>FAQ</a></li>
+            <li><a href="terms.html"><i class="fas fa-file-lines fa-fw" style="margin-right:.4rem;"></i>TOS</a></li>
+            <li><a href="staff.html"><i class="fas fa-users fa-fw" style="margin-right:.4rem;"></i>Staff</a></li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">SNS</div>
+          <ul class="link-list">
+            <li><a href="#"><i class="fab fa-twitter fa-fw" style="margin-right:.4rem;"></i>Twitter</a></li>
+            <li><a href="#"><i class="fab fa-tumblr fa-fw" style="margin-right:.4rem;"></i>Tumblr</a></li>
+            <li><a href="#"><i class="fas fa-cloud fa-fw" style="margin-right:.4rem;"></i>BlueSky</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Designs -->
+    <div class="section-card fade-in" style="animation-delay:.1s" id="recent-designs-section">
+      <div class="section-card-header">
+        <h3><a href="masterlist.html">Recent Designs</a></h3>
+        <a href="masterlist.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="gallery-grid gallery-grid-sm" id="recent-designs"></div>
+    </div>
+
+    <!-- Recent Gallery -->
+    <div class="section-card fade-in" style="animation-delay:.15s" id="recent-gallery-section">
+      <div class="section-card-header">
+        <h3><a href="gallery.html">Recent Gallery</a></h3>
+        <a href="gallery.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="post-grid" id="recent-gallery" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
+    </div>
+
+    <!-- Prompts -->
+    <div class="section-card fade-in" style="animation-delay:.2s">
+      <div class="section-card-header">
+        <h3><a href="prompts.html">Active Prompts</a></h3>
+        <a href="prompts.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div id="recent-prompts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"></div>
+    </div>
+
+  </div>
+
+  <div data-include="includes/footer.html"></div>
+
+  <script src="js/base.js"></script>
+  <script type="module">
+    import { ARPGDEX } from './js/utils.js';
+
+    // --- Mock data (replace with ARPGDEX.importSheet calls) ---
+    const mockDesigns = [
+      { design: 'CHA-001', image: 'https://picsum.photos/seed/c1/200/200', owner: 'Alice' },
+      { design: 'CHA-002', image: 'https://picsum.photos/seed/c2/200/200', owner: 'Bob' },
+      { design: 'CHA-003', image: 'https://picsum.photos/seed/c3/200/200', owner: 'Carol' },
+      { design: 'CHA-004', image: 'https://picsum.photos/seed/c4/200/200', owner: 'Dave' },
+    ];
+
+    const mockGallery = [
+      { id: 'G-001', title: '봄날의 소풍', author: 'Alice', category: '일반', thumb: 'https://picsum.photos/seed/g1/400/225' },
+      { id: 'G-002', title: '프롬프트: 달빛 아래서', author: 'Bob', category: '프롬프트', thumb: 'https://picsum.photos/seed/g2/400/225' },
+      { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', thumb: 'https://picsum.photos/seed/g3/400/225' },
+    ];
+
+    const mockPrompts = [
+      { title: '달빛 산책', description: '달빛이 비치는 밤거리를 걷는 장면을 그려주세요.', enddate: '2025-12-31' },
+      { title: '봄맞이 소풍', description: '봄날 꽃이 핀 들판에서의 소풍 장면을 그려주세요.', enddate: '2025-11-30' },
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Designs
+      const designGrid = document.getElementById('recent-designs');
+      designGrid.innerHTML = mockDesigns.map(d => `
+        <a class="gallery-card" href="masterlist.html?profile=${encodeURIComponent(d.design)}">
+          <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
+          <div class="gallery-card-info">
+            <div class="gallery-card-title">${d.design}</div>
+            <div class="gallery-card-sub">${d.owner}</div>
+          </div>
+        </a>`).join('');
+
+      // Gallery
+      const galleryGrid = document.getElementById('recent-gallery');
+      galleryGrid.innerHTML = mockGallery.map(g => `
+        <a class="post-card" href="gallery.html?post=${encodeURIComponent(g.id)}">
+          <div class="post-card-thumb">
+            <img src="${g.thumb}" alt="${g.title}" loading="lazy">
+            <div class="post-card-cat"><span class="badge badge-category">${g.category}</span></div>
+          </div>
+          <div class="post-card-body">
+            <div class="post-card-title">${g.title}</div>
+            <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${g.author}</div>
+          </div>
+        </a>`).join('');
+
+      // Prompts
+      const promptsEl = document.getElementById('recent-prompts');
+      promptsEl.innerHTML = mockPrompts.map(p => `
+        <div class="card">
+          <div class="card-header"><span class="text-primary">${p.title}</span></div>
+          <div class="card-body" style="font-size:.875rem;color:var(--text-secondary)">${p.description}</div>
+          <div class="card-footer" style="font-size:.75rem;color:var(--text-muted)">
+            <i class="far fa-calendar fa-fw"></i> 마감: ${p.enddate}
+          </div>
+        </div>`).join('');
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARPGDEX — Player Inventories</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="arpgdex.css">
+</head>
+<body>
+  <div data-include="includes/header.html"></div>
+  <div id="main-container">
+
+    <div id="list-view">
+      <div class="page-header-card">
+        <h2><a href="inventories.html">Player Inventories</a></h2>
+        <div style="margin-top:1rem;" class="filter-bar">
+          <input class="form-control" type="search" id="search-input" placeholder="플레이어 이름 검색…">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;" class="fade-in" id="inv-grid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <div id="profile-view" class="hidden">
+      <div style="margin-bottom:1rem;">
+        <button class="btn btn-ghost btn-sm" id="back-btn"><i class="fas fa-arrow-left"></i> 목록으로</button>
+      </div>
+      <div class="card fade-in">
+        <div class="card-header"><h2 id="profile-username" style="font-size:1.3rem;text-transform:capitalize;"></h2></div>
+        <div style="padding:0;">
+          <div class="tab-nav">
+            <button class="tab-btn active" data-tab="inventory">인벤토리</button>
+            <button class="tab-btn" data-tab="designs">보유 디자인</button>
+            <button class="tab-btn" data-tab="logs">거래 기록</button>
+          </div>
+        </div>
+        <div style="padding:1.5rem 2rem;">
+          <div class="tab-pane active" id="tab-inventory">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;" id="inv-items"></div>
+          </div>
+          <div class="tab-pane" id="tab-designs">
+            <div class="gallery-grid gallery-grid-sm" id="inv-designs"></div>
+          </div>
+          <div class="tab-pane" id="tab-logs">
+            <div id="inv-log-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div data-include="includes/footer.html"></div>
+  <script src="js/base.js"></script>
+  <script type="module">
+    import { ARPGDEX } from './js/utils.js';
+    const PLAYERS = [
+      { username: 'Alice', items: [{name:'Gold Coin',qty:150,image:'https://picsum.photos/seed/i1/200/200'},{name:'Lucky Egg',qty:2,image:'https://picsum.photos/seed/i4/200/200'}], designs: ['CHA-001'], logs: [{timestamp:'2024-03-01',reason:'Gold Coin +50 (Event)'}] },
+      { username: 'Bob', items: [{name:'Common MYO Slot',qty:1,image:'https://picsum.photos/seed/i2/200/200'}], designs: ['CHA-002'], logs: [{timestamp:'2024-02-15',reason:'MYO Slot +1 (Purchase)'}] },
+      { username: 'Carol', items: [{name:'Trait Potion',qty:3,image:'https://picsum.photos/seed/i5/200/200'}], designs: ['CHA-003'], logs: [] },
+      { username: 'Dave', items: [], designs: ['CHA-004'], logs: [] },
+    ];
+    const ML = { 'CHA-001': 'https://picsum.photos/seed/c1/200/200', 'CHA-002': 'https://picsum.photos/seed/c2/200/200', 'CHA-003': 'https://picsum.photos/seed/c3/200/200', 'CHA-004': 'https://picsum.photos/seed/c4/200/200' };
+
+    let filtered = PLAYERS;
+    function renderList() {
+      document.getElementById('inv-grid').innerHTML = filtered.map(p => `
+        <div class="card" style="cursor:pointer;transition:border-color .2s;" onclick="showProfile('${p.username}')"
+          onmouseover="this.style.borderColor='var(--border-strong)'" onmouseout="this.style.borderColor=''">
+          <div class="card-body" style="padding:.9rem 1.1rem;">
+            <div style="font-family:var(--font-heading);font-size:.9rem;">${p.username}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">${p.designs.length} 디자인</div>
+          </div>
+        </div>`).join('');
+    }
+    window.showProfile = (name) => {
+      const p = PLAYERS.find(x => x.username === name); if (!p) return;
+      history.pushState({}, '', `?profile=${name}`);
+      document.getElementById('list-view').classList.add('hidden');
+      document.getElementById('profile-view').classList.remove('hidden');
+      document.getElementById('profile-username').textContent = p.username;
+      // Items
+      document.getElementById('inv-items').innerHTML = p.items.length
+        ? p.items.map(it => `<div class="card"><div class="card-body" style="padding:.75rem;text-align:center;"><img src="${it.image}" alt="${it.name}" style="width:60px;height:60px;border-radius:var(--radius);margin:0 auto .5rem;"><div style="font-size:.8rem;font-weight:600;">${it.name}</div><div style="font-size:.75rem;color:var(--text-muted);">x${it.qty}</div></div></div>`).join('')
+        : '<div class="empty-state"><i class="fas fa-box-open"></i><p>아이템 없음</p></div>';
+      // Designs
+      document.getElementById('inv-designs').innerHTML = p.designs.length
+        ? p.designs.map(id => `<a class="gallery-card" href="masterlist.html?profile=${id}"><div class="gallery-card-img"><img src="${ML[id]||''}" alt="${id}" loading="lazy"></div><div class="gallery-card-info"><div class="gallery-card-title">${id}</div></div></a>`).join('')
+        : '<div class="empty-state"><i class="fas fa-dragon"></i><p>보유 디자인 없음</p></div>';
+      // Logs
+      document.getElementById('inv-log-list').innerHTML = p.logs.length
+        ? p.logs.map(l => `<div class="log-row"><span class="log-time">${l.timestamp}</span><span>${l.reason}</span></div>`).join('')
+        : '<div class="empty-state"><i class="fas fa-scroll"></i><p>거래 기록 없음</p></div>';
+      // Tabs
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pn => pn.classList.remove('active'));
+      document.querySelector('.tab-btn[data-tab="inventory"]').classList.add('active');
+      document.getElementById('tab-inventory').classList.add('active');
+      window.scrollTo(0,0);
+    };
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+    document.getElementById('back-btn').addEventListener('click', () => {
+      history.pushState({}, '', 'inventories.html');
+      document.getElementById('profile-view').classList.add('hidden');
+      document.getElementById('list-view').classList.remove('hidden');
+    });
+    window.addEventListener('popstate', () => {
+      const p = ARPGDEX.getParam('profile');
+      if (p) showProfile(p);
+      else { document.getElementById('profile-view').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); }
+    });
+    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => {
+      const q = e.target.value.toLowerCase();
+      filtered = q ? PLAYERS.filter(p => p.username.toLowerCase().includes(q)) : PLAYERS;
+      renderList();
+    }));
+    document.addEventListener('DOMContentLoaded', () => {
+      const p = ARPGDEX.getParam('profile');
+      if (p) showProfile(p); else renderList();
+    });
+  </script>
+</body>
+</html>

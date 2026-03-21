@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARPGDEX — Gallery</title>
+  <meta name="robots" content="noai, noimageai">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="arpgdex.css">
+</head>
+<body>
+
+  <div data-include="includes/header.html"></div>
+
+  <div id="main-container">
+
+    <!-- ============================================================
+    LIST VIEW
+    ============================================================= -->
+    <div id="list-view">
+
+      <!-- Page Header -->
+      <div class="page-header-card">
+        <h2><a href="gallery.html">Gallery</a></h2>
+        <div style="margin-top:1rem;" class="filter-bar">
+          <!-- Search -->
+          <input class="form-control" type="search" id="search-input" placeholder="제목, 작성자, 캐릭터 코드 검색…">
+          <!-- Search field -->
+          <select class="form-control" id="search-field" style="min-width:130px;max-width:160px;">
+            <option value="all">전체 검색</option>
+            <option value="title">제목</option>
+            <option value="author">작성자</option>
+            <option value="characters">캐릭터</option>
+            <option value="prompt">프롬프트</option>
+          </select>
+        </div>
+        <!-- Category tabs -->
+        <div style="margin-top:1rem;" class="cat-tabs" id="cat-tabs">
+          <button class="cat-tab active" data-cat="all">전체</button>
+          <button class="cat-tab" data-cat="일반">일반</button>
+          <button class="cat-tab" data-cat="프롬프트">프롬프트</button>
+        </div>
+      </div>
+
+      <!-- Grid -->
+      <div class="post-grid fade-in" id="gallery-grid"></div>
+      <div id="empty-state" class="empty-state hidden">
+        <i class="fas fa-image"></i>
+        <p>게시물이 없습니다.</p>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="pagination"></div>
+
+    </div>
+
+    <!-- ============================================================
+    DETAIL VIEW
+    ============================================================= -->
+    <div id="detail-view" class="hidden">
+
+      <!-- Back button -->
+      <div style="margin-bottom:1rem;">
+        <button class="btn btn-ghost btn-sm" id="back-btn">
+          <i class="fas fa-arrow-left"></i> 목록으로
+        </button>
+      </div>
+
+      <div class="card fade-in">
+
+        <!-- Title Header -->
+        <div class="card-header" style="padding:1.5rem 2rem;">
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+            <span id="detail-cat" class="badge badge-category"></span>
+            <h2 style="font-size:1.25rem;" id="detail-title"></h2>
+          </div>
+          <div style="margin-top:.4rem;font-size:.8rem;color:var(--text-muted);">
+            <i class="fas fa-user fa-fw"></i> <span id="detail-author"></span>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div id="detail-images" style="background:var(--bg-faded);padding:1.5rem;display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;"></div>
+
+        <!-- Info block -->
+        <div style="padding:1.5rem 2rem;">
+          <div style="display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);border-bottom:1px solid var(--border-strong);padding-bottom:.25rem;margin-bottom:1rem;">
+            Info
+          </div>
+          <table class="info-table">
+            <tr>
+              <td>카테고리</td>
+              <td id="detail-info-cat"></td>
+            </tr>
+            <tr id="detail-prompt-row">
+              <td>프롬프트</td>
+              <td id="detail-info-prompt"></td>
+            </tr>
+            <tr>
+              <td>등장 캐릭터</td>
+              <td id="detail-info-chars"></td>
+            </tr>
+            <tr id="detail-desc-row">
+              <td>설명</td>
+              <td id="detail-info-desc" class="text-pre"></td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Prev / Next -->
+        <div class="prevnext-bar" id="detail-prevnext">
+          <a href="#" id="prev-post" style="display:none;">
+            <i class="fas fa-chevron-left"></i> <span id="prev-title"></span>
+          </a>
+          <span></span>
+          <a href="#" id="next-post" style="display:none;">
+            <span id="next-title"></span> <i class="fas fa-chevron-right"></i>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div data-include="includes/footer.html"></div>
+
+  <script src="js/base.js"></script>
+  <script type="module">
+    import { ARPGDEX } from './js/utils.js';
+
+    /* ============================================================
+       MOCK DATA
+       (Replace with ARPGDEX.importSheet('gallery') call)
+    ============================================================= */
+    const GALLERY_DATA = [
+      {
+        id: 'G-001',
+        title: '봄날의 소풍',
+        author: 'Alice',
+        authorlink: '#',
+        category: '일반',
+        prompt: '',
+        characters: 'CHA-001, CHA-002',
+        description: '따뜻한 봄날 두 캐릭터가 함께 소풍을 즐기는 장면입니다.\n꽃이 만개한 들판 위에서의 한 컷.',
+        images: ['https://picsum.photos/seed/gal1/800/600'],
+        thumb: 'https://picsum.photos/seed/gal1/400/225',
+      },
+      {
+        id: 'G-002',
+        title: '달빛 아래서',
+        author: 'Bob',
+        authorlink: '#',
+        category: '프롬프트',
+        prompt: '달빛 산책',
+        characters: 'CHA-003',
+        description: '달빛 산책 프롬프트 참여작입니다.\n고요한 밤거리를 혼자 걷는 캐릭터의 뒷모습.',
+        images: ['https://picsum.photos/seed/gal2/800/600', 'https://picsum.photos/seed/gal2b/800/600'],
+        thumb: 'https://picsum.photos/seed/gal2/400/225',
+      },
+      {
+        id: 'G-003',
+        title: '모험의 시작',
+        author: 'Carol',
+        authorlink: '#',
+        category: '일반',
+        prompt: '',
+        characters: 'CHA-001, CHA-004',
+        description: '새로운 여정을 떠나는 두 캐릭터의 이야기.',
+        images: ['https://picsum.photos/seed/gal3/800/600'],
+        thumb: 'https://picsum.photos/seed/gal3/400/225',
+      },
+      {
+        id: 'G-004',
+        title: '겨울 축제',
+        author: 'Dave',
+        authorlink: '#',
+        category: '프롬프트',
+        prompt: '겨울 축제',
+        characters: 'CHA-002, CHA-003',
+        description: '겨울 축제 프롬프트 참여작.\n눈이 쌓인 광장에서 함께하는 따뜻한 순간.',
+        images: ['https://picsum.photos/seed/gal4/800/600'],
+        thumb: 'https://picsum.photos/seed/gal4/400/225',
+      },
+      {
+        id: 'G-005',
+        title: '고요한 오후',
+        author: 'Eve',
+        authorlink: '#',
+        category: '일반',
+        prompt: '',
+        characters: 'CHA-005',
+        description: '혼자만의 고요한 오후를 보내는 모습.',
+        images: ['https://picsum.photos/seed/gal5/800/600'],
+        thumb: 'https://picsum.photos/seed/gal5/400/225',
+      },
+      {
+        id: 'G-006',
+        title: '꽃비 속에서',
+        author: 'Frank',
+        authorlink: '#',
+        category: '프롬프트',
+        prompt: '봄맞이 소풍',
+        characters: 'CHA-001',
+        description: '봄맞이 소풍 프롬프트 참여작.\n꽃비가 내리는 아름다운 순간.',
+        images: ['https://picsum.photos/seed/gal6/800/600'],
+        thumb: 'https://picsum.photos/seed/gal6/400/225',
+      },
+    ];
+
+    /* ============================================================
+       State
+    ============================================================= */
+    const PER_PAGE = 9;
+    let state = {
+      data: GALLERY_DATA,
+      filtered: GALLERY_DATA,
+      cat: 'all',
+      search: '',
+      searchField: 'all',
+      page: 1,
+    };
+
+    /* ============================================================
+       Filter
+    ============================================================= */
+    function filterData() {
+      let arr = GALLERY_DATA;
+      // Category
+      if (state.cat !== 'all') arr = arr.filter(p => p.category === state.cat);
+      // Search
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        arr = arr.filter(p => {
+          if (state.searchField === 'title') return p.title.toLowerCase().includes(q);
+          if (state.searchField === 'author') return p.author.toLowerCase().includes(q);
+          if (state.searchField === 'characters') return p.characters.toLowerCase().includes(q);
+          if (state.searchField === 'prompt') return p.prompt.toLowerCase().includes(q);
+          // all
+          return (p.title + p.author + p.characters + p.prompt).toLowerCase().includes(q);
+        });
+      }
+      state.filtered = arr;
+      state.page = 1;
+    }
+
+    /* ============================================================
+       Render List
+    ============================================================= */
+    function renderList() {
+      const grid = document.getElementById('gallery-grid');
+      const empty = document.getElementById('empty-state');
+      const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
+
+      if (items.length === 0) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        grid.innerHTML = items.map(p => `
+          <div class="post-card" data-id="${p.id}" onclick="showDetail('${p.id}')">
+            <div class="post-card-thumb">
+              <img src="${p.thumb}" alt="${p.title}" loading="lazy">
+              <div class="post-card-cat">
+                <span class="badge badge-category">${p.category}</span>
+              </div>
+            </div>
+            <div class="post-card-body">
+              <div class="post-card-title">${p.title}</div>
+              <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${p.author}</div>
+              ${p.characters ? `<div class="post-card-author" style="margin-top:.2rem;"><i class="fas fa-dragon fa-fw"></i> ${p.characters}</div>` : ''}
+            </div>
+          </div>`).join('');
+      }
+
+      ARPGDEX.renderPagination(
+        document.getElementById('pagination'),
+        state.page,
+        Math.ceil(state.filtered.length / PER_PAGE),
+        (p) => { state.page = p; renderList(); window.scrollTo(0, 0); }
+      );
+    }
+
+    /* ============================================================
+       Show Detail
+    ============================================================= */
+    window.showDetail = (id) => {
+      const post = GALLERY_DATA.find(p => p.id === id);
+      if (!post) return;
+
+      // Update URL without reload
+      history.pushState({post: id}, '', `?post=${encodeURIComponent(id)}`);
+
+      document.getElementById('list-view').classList.add('hidden');
+      const dv = document.getElementById('detail-view');
+      dv.classList.remove('hidden');
+
+      // Fill content
+      document.getElementById('detail-title').textContent = post.title;
+      document.getElementById('detail-cat').textContent = post.category;
+      document.getElementById('detail-author').textContent = post.author;
+      document.getElementById('detail-info-cat').textContent = post.category;
+      document.getElementById('detail-info-prompt').textContent = post.prompt || '-';
+      document.getElementById('detail-prompt-row').style.display = post.prompt ? '' : 'none';
+      document.getElementById('detail-info-desc').textContent = post.description || '';
+      document.getElementById('detail-desc-row').style.display = post.description ? '' : 'none';
+
+      // Characters with links
+      const chars = post.characters ? post.characters.split(',').map(c => c.trim()) : [];
+      document.getElementById('detail-info-chars').innerHTML = chars.length
+        ? chars.map(c => `<a href="masterlist.html?profile=${encodeURIComponent(c)}" class="tag-pill">${c}</a>`).join(' ')
+        : '-';
+
+      // Images
+      document.getElementById('detail-images').innerHTML = post.images.map(img => `
+        <img src="${img}" alt="${post.title}" style="max-height:500px;max-width:100%;border-radius:var(--radius);object-fit:contain;">`).join('');
+
+      // Prev / Next
+      const idx = state.filtered.findIndex(p => p.id === id);
+      const prev = state.filtered[idx - 1];
+      const next = state.filtered[idx + 1];
+      const prevEl = document.getElementById('prev-post');
+      const nextEl = document.getElementById('next-post');
+      if (prev) {
+        prevEl.style.display = '';
+        document.getElementById('prev-title').textContent = prev.title;
+        prevEl.onclick = (e) => { e.preventDefault(); showDetail(prev.id); };
+      } else prevEl.style.display = 'none';
+      if (next) {
+        nextEl.style.display = '';
+        document.getElementById('next-title').textContent = next.title;
+        nextEl.onclick = (e) => { e.preventDefault(); showDetail(next.id); };
+      } else nextEl.style.display = 'none';
+
+      window.scrollTo(0, 0);
+    };
+
+    /* ============================================================
+       Back
+    ============================================================= */
+    document.getElementById('back-btn').addEventListener('click', () => {
+      history.pushState({}, '', 'gallery.html');
+      document.getElementById('detail-view').classList.add('hidden');
+      document.getElementById('list-view').classList.remove('hidden');
+    });
+
+    /* Handle back/forward */
+    window.addEventListener('popstate', () => {
+      const postId = ARPGDEX.getParam('post');
+      if (postId) {
+        showDetail(postId);
+      } else {
+        document.getElementById('detail-view').classList.add('hidden');
+        document.getElementById('list-view').classList.remove('hidden');
+      }
+    });
+
+    /* ============================================================
+       Events
+    ============================================================= */
+    document.getElementById('search-input').addEventListener('input',
+      ARPGDEX.debounce((e) => {
+        state.search = e.target.value;
+        filterData();
+        renderList();
+      })
+    );
+
+    document.getElementById('search-field').addEventListener('change', (e) => {
+      state.searchField = e.target.value;
+      filterData();
+      renderList();
+    });
+
+    document.querySelectorAll('.cat-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.cat = btn.dataset.cat;
+        filterData();
+        renderList();
+      });
+    });
+
+    /* ============================================================
+       Init
+    ============================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      const postId = ARPGDEX.getParam('post');
+      if (postId) {
+        filterData();
+        showDetail(postId);
+      } else {
+        filterData();
+        renderList();
+      }
+    });
+
+  </script>
+</body>
+</html>
