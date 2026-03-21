@@ -140,4 +140,32 @@ ARPGDEX.driveImgUrl = (url) => {
   return url;
 };
 
+/* ---- 통화 단위 (MainOption!D28) ------------------------------ */
+ARPGDEX.currencyUnit = '￦';  // 기본값
+
+ARPGDEX.loadCurrency = async () => {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${ARPGDEX.sheetId}/gviz/tq?tqx=out:json&sheet=MainOption&range=D28`;
+    const text = await fetch(url).then(r => r.text());
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const cell = json?.table?.rows?.[0]?.c?.[0];
+    const val  = cell?.v || cell?.f || '';
+    if (val) ARPGDEX.currencyUnit = String(val).trim();
+  } catch(e) { /* 기본값 유지 */ }
+};
+
+/* ---- 가치 포맷 변환 ------------------------------------------ */
+// 30000 → "3.0 (30,000 ￦)"
+// 단위 기준: 10,000 (만원 단위 팬덤 표기)
+ARPGDEX.formatValue = (raw) => {
+  const num = Number(String(raw).replace(/,/g, ''));
+  if (!raw || isNaN(num)) return '-';
+  const unit  = ARPGDEX.currencyUnit;
+  const full  = num.toLocaleString('ko-KR');           // 30,000
+  const short = parseFloat((num / 10000).toPrecision(10)); // 3.0 (불필요 trailing zero 제거)
+  // toPrecision 대신 직접 계산으로 깔끔하게
+  const shortStr = (num / 10000).toString().replace(/\.?0+$/, '') || '0';
+  return `${shortStr} (${full} ${unit})`;
+};
+
 export { ARPGDEX };

@@ -565,7 +565,7 @@
       // 1. 스트링 + 통화 단위 먼저 로드
       await Promise.all([
         ARPGDEX.loadStrings(),
-        ARPGDEX.loadCurrency(),
+        typeof ARPGDEX.loadCurrency === 'function' ? ARPGDEX.loadCurrency() : Promise.resolve(),
       ]);
 
       // 2. MasterList + 옵션 + 유저목록 병렬 로드
@@ -935,8 +935,11 @@
         document.getElementById('masterlist-grid').innerHTML =
           `<div style="grid-column:1/-1;" class="empty-state">
             <i class="fas fa-triangle-exclamation"></i>
-            <p>데이터를 불러오지 못했습니다. 시트 공유 설정을 확인해 주세요.</p>
+            <p data-sid="35">데이터를 불러오지 못했습니다. 시트 공유 설정을 확인해 주세요.</p>
           </div>`;
+        // 스트링이 로드됐다면 교체
+        const p = document.querySelector('[data-sid="35"]');
+        if (p && ARPGDEX.S(35)) p.textContent = ARPGDEX.S(35);
       });
     });
 
