@@ -10,7 +10,7 @@ export const MENU_GROUPS = [];
 export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLink: '' };
 
 /* ---- sessionStorage 헬퍼 (버전 키 + TTL 5분) --------------- */
-const CACHE_VER = 'v5';
+const CACHE_VER = 'v6';
 const CACHE_TTL = 5 * 60 * 1000; // 5분
 const cache = {
   get: (key) => {
