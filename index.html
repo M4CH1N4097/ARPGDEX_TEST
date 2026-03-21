@@ -66,14 +66,14 @@
     </div>
 
     <!-- Recent Designs + Recent Gallery (side by side) -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start;" class="fade-in" style="animation-delay:.1s" id="dual-section">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:stretch;" class="fade-in" id="dual-section">
 
       <div class="section-card" id="recent-designs-section">
         <div class="section-card-header">
           <h3><a href="masterlist.html">Recent Designs</a></h3>
           <a href="masterlist.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
         </div>
-        <div class="gallery-grid gallery-grid-sm" id="recent-designs"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;" id="recent-designs"></div>
       </div>
 
       <div class="section-card" id="recent-gallery-section">
@@ -81,7 +81,7 @@
           <h3><a href="gallery.html">Recent Gallery</a></h3>
           <a href="gallery.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
         </div>
-        <div id="recent-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;" id="recent-gallery"></div>
       </div>
 
     </div>
