@@ -46,7 +46,10 @@ ARPGDEX.importSheet = async (sheetPage, sheetId) => {
         return obj;
       })
       .filter(row => {
-        // 완전히 빈 행 제외 (모든 값이 빈 문자열)
+        // hide 컬럼이 TRUE면 제외
+        const hideVal = row['hide'];
+        if (hideVal !== undefined && String(hideVal).toUpperCase() === 'TRUE') return false;
+        // 완전히 빈 행 제외
         return Object.values(row).some(v => v !== '' && v !== null && v !== undefined);
       });
   } catch(e) {

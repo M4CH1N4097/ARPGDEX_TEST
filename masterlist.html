@@ -290,55 +290,54 @@
     let GALLERY_DATA = []; // 갤러리 데이터 (tab 연동용, 추후 연동)
     let state = { filtered:[], folder:'all', designtype:'all', rarity:'all', status:'all', search:'', page:1 };
 
+    /* ---- Google Drive URL 변환 (인라인) ---- */
+    const driveImgUrl = (url) => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([\w-]+)/);
+      if (m) return `https://drive.google.com/uc?id=${m[1]}&export=view`;
+      return url;
+    };
+
     /* ---- 시트 컬럼 → 내부 필드 정규화 ---- */
     function normalizeChar(row) {
-      // 스탯: stata~statj, stat_a~stat_j, a~j 등 다양한 형태 지원
-      const stat = (k) => {
-        const key = k.toLowerCase();
-        const candidates = [`stat${key}`, `stat_${key}`, key, `스탯${key}`];
-        for (const c of candidates) {
-          if (row[c] !== undefined && row[c] !== '') return Number(row[c]) || 0;
-        }
-        return 0;
-      };
-      // 컬럼값 가져오기 (여러 후보명 중 첫 번째 유효값)
-      const get = (...keys) => {
-        for (const k of keys) {
-          const v = row[k.toLowerCase().replace(/\s/g,'')];
-          if (v !== undefined && v !== '') return v;
-        }
-        return '';
-      };
+      // status01~10 → stats A~J
+      const statKeys = ['A','B','C','D','E','F','G','H','I','J'];
+      const stats = {};
+      statKeys.forEach((k, i) => {
+        const col = `status${String(i+1).padStart(2,'0')}`;
+        stats[k] = Number(row[col] || 0);
+      });
+
       return {
-        id:           get('id'),
-        design:       get('design', 'code', 'designcode', 'design_code'),
-        species:      get('species'),
-        rarity:       get('rarity'),
-        designtype:   get('designtype', 'design_type', 'type'),
-        subtype:      get('subtype', 'sub_type', 'sub'),
-        faction:      get('faction'),
-        growth:       get('growth', 'growthstage', 'growth_stage', 'stage'),
-        owner:        get('owner'),
-        ownerlink:    get('ownerlink', 'owner_link', 'ownerurl') || '#',
-        artist:       get('artist'),
-        artistlink:   get('artistlink', 'artist_link', 'artisturl') || '#',
-        designer:     get('designer'),
-        designerlink: get('designerlink', 'designer_link', 'designerurl') || '#',
-        traits:       get('traits', 'trait'),
-        availFree:    ARPGDEX.toBool(get('availfree', 'avail_free', 'freegift', 'free_gift', '무료분양')),
-        availResell:  ARPGDEX.toBool(get('availresell', 'avail_resell', 'resell', '재분양')),
-        availPaid:    ARPGDEX.toBool(get('availpaid', 'avail_paid', 'paid', '유료분양')),
-        value:        get('value'),
-        status:       get('status', 'adoptstatus', 'adopt_status'),
-        notes:        get('notes', 'note', 'memo'),
-        image:        ARPGDEX.driveImgUrl(get('image', 'img', 'imageurl', 'image_url')),
-        profiledoc:   get('profiledoc', 'profile_doc', 'profilelink', 'profile_link', 'profileurl'),
-        xp:           Number(get('xp') || 0),
-        xpNext:       Number(get('xpnext', 'xp_next', 'nextxp') || 500),
-        stats: {
-          A: stat('A'), B: stat('B'), C: stat('C'), D: stat('D'), E: stat('E'),
-          F: stat('F'), G: stat('G'), H: stat('H'), I: stat('I'), J: stat('J'),
-        },
+        id:           row['id']              || '',
+        design:       row['charaindex']      || '',   // 캐릭터 코드 (예: DOG-0001)
+        charaname:    row['charaname']       || '',   // 캐릭터 이름
+        species:      row['species']         || '',
+        rarity:       row['rarity']          || '',
+        designtype:   row['designtypes']     || '',
+        prefix:       row['prefix']          || '',
+        subtype:      row['subtype']         || '',
+        faction:      row['faction']         || '',
+        growth:       row['stage']           || '',
+        owner:        row['owner']           || '',
+        ownerlink:    '#',
+        artist:       row['artist']          || '',
+        artistlink:   '#',
+        designer:     row['designer']        || '',
+        designerlink: '#',
+        traits:       row['traits[]']        || '',
+        availFree:    ARPGDEX.toBool(row['cangift']  || false),
+        availResell:  ARPGDEX.toBool(row['cantrade'] || false),
+        availPaid:    ARPGDEX.toBool(row['cansold']  || false),
+        value:        row['salevalue']       || '',
+        status:       row['adoptstatue']     || '',
+        notes:        row['note']            || '',
+        image:        driveImgUrl(row['image']   || ''),
+        preview:      driveImgUrl(row['preview'] || ''),
+        profiledoc:   row['characterprofile'] || '',
+        xp:           0,
+        xpNext:       500,
+        stats,
       };
     }
 
@@ -362,7 +361,7 @@
       // ID가 0이 아닌 행만, ID 내림차순 정렬
       ML_DATA = rawML
         .map(normalizeChar)
-        .filter(c => c.id && Number(c.id) !== 0 && c.design)
+        .filter(c => c.id && Number(c.id) !== 0 && c.design)  // id=0 제외, hide는 utils에서 처리
         .sort((a, b) => Number(b.id) - Number(a.id));
 
       // 스트링으로 UI 라벨 적용
@@ -676,380 +675,6 @@
           </div>`;
       });
     });
-
-  </script>
-</body>
-</html>
-
-    /* ============================================================
-       MOCK DATA — replace with ARPGDEX.importSheet('masterlist')
-    ============================================================= */
-    const GALLERY_DATA_ALL = [
-      { id: 'G-001', title: '봄날의 소풍', author: 'Alice', category: '일반', characters: 'CHA-001, CHA-002', thumb: 'https://picsum.photos/seed/gal1/400/225' },
-      { id: 'G-002', title: '달빛 아래서', author: 'Bob', category: '프롬프트', characters: 'CHA-003', thumb: 'https://picsum.photos/seed/gal2/400/225' },
-      { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', characters: 'CHA-001, CHA-004', thumb: 'https://picsum.photos/seed/gal3/400/225' },
-      { id: 'G-004', title: '겨울 축제', author: 'Dave', category: '프롬프트', characters: 'CHA-002, CHA-003', thumb: 'https://picsum.photos/seed/gal4/400/225' },
-    ];
-
-    const ML_DATA = [
-      {
-        design: 'CHA-001', id: '001', species: 'Dog', rarity: 'Common', designtype: 'Official Design',
-        traits: 'Floppy Ears\nBig Eyes\nSpot Tail', owner: 'Alice', ownerlink: '#',
-        artist: 'ArtistA', artistlink: '#', designer: 'DesignerA', designerlink: '#',
-        value: '30', status: 'Resell', notes: '기본 캐릭터입니다.',
-        subtype: '야생종', faction: '중립', growth: '성체',
-        availFree: false, availResell: true, availPaid: true,
-        image: 'https://picsum.photos/seed/c1/400/400',
-        profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
-        xp: 320, xpNext: 500,
-        stats: { A:3, B:2, C:4, D:1, E:3, F:2, G:5, H:1, I:3, J:2 },
-      },
-      {
-        design: 'CHA-002', id: '002', species: 'Cat', rarity: 'Rare', designtype: 'MYO Design',
-        traits: 'Pointed Ears\nMagic Eyes\nGlowing Tail', owner: 'Bob', ownerlink: '#',
-        artist: 'ArtistB', artistlink: '#', designer: 'DesignerB', designerlink: '#',
-        value: '80', status: 'Trade', notes: '마법을 사용하는 특수 캐릭터.',
-        subtype: '마법종', faction: '마법사 길드', growth: '성체',
-        availFree: false, availResell: true, availPaid: false,
-        image: 'https://picsum.photos/seed/c2/400/400',
-        profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
-        xp: 80, xpNext: 500,
-        stats: { A:5, B:4, C:3, D:5, E:2, F:4, G:3, H:5, I:2, J:4 },
-      },
-      {
-        design: 'CHA-003', id: '003', species: 'Bunny', rarity: 'Uncommon', designtype: 'Guest Design',
-        traits: 'Long Ears\nSweet Eyes\nFluffy Tail', owner: 'Carol', ownerlink: '#',
-        artist: 'ArtistC', artistlink: '#', designer: 'DesignerC', designerlink: '#',
-        value: '50', status: 'Gift', notes: '',
-        image: 'https://picsum.photos/seed/c3/400/400',
-        profiledoc: '',
-        xp: 0, xpNext: 500,
-        stats: { A:1, B:2, C:1, D:2, E:1, F:3, G:1, H:2, I:1, J:1 },
-      },
-      {
-        design: 'CHA-004', id: '004', species: 'Dog', rarity: 'Legendary', designtype: 'Official Design',
-        traits: 'Dragon Wings\nHorn\nFire Tail', owner: 'Dave', ownerlink: '#',
-        artist: 'ArtistA', artistlink: '#', designer: 'DesignerA', designerlink: '#',
-        value: '300', status: 'Resell', notes: '전설급 디자인.',
-        image: 'https://picsum.photos/seed/c4/400/400',
-        profiledoc: '',
-        xp: 450, xpNext: 500,
-        stats: { A:5, B:5, C:5, D:4, E:5, F:5, G:4, H:5, I:5, J:5 },
-      },
-      {
-        design: 'CHA-005', id: '005', species: 'Cat', rarity: 'Very Rare', designtype: 'MYO Design',
-        traits: 'Star Ears\nCosmic Eyes', owner: 'Eve', ownerlink: '#',
-        artist: 'ArtistD', artistlink: '#', designer: 'DesignerD', designerlink: '#',
-        value: '150', status: 'Trade', notes: '',
-        image: 'https://picsum.photos/seed/c5/400/400',
-        profiledoc: '',
-        xp: 200, xpNext: 500,
-        stats: { A:2, B:3, C:4, D:3, E:5, F:2, G:3, H:4, I:3, J:2 },
-      },
-    ];
-
-    const LOG_DATA = {
-      'CHA-001': [
-        { timestamp: '2024-01-15 12:00', reason: 'Initial registration' },
-        { timestamp: '2024-03-20 09:30', reason: 'Transferred to Alice' },
-      ],
-      'CHA-002': [
-        { timestamp: '2024-02-10 15:00', reason: 'MYO approved' },
-      ],
-    };
-
-    /* ============================================================
-       State
-    ============================================================= */
-    const PER_PAGE = 12;
-    let state = {
-      filtered: ML_DATA,
-      folder: 'all',
-      designtype: 'all',
-      rarity: 'all',
-      status: 'all',
-      search: '',
-      page: 1,
-    };
-
-    /* ============================================================
-       Filter
-    ============================================================= */
-    function filterData() {
-      let arr = ML_DATA;
-      if (state.folder !== 'all') arr = arr.filter(d => d.species.toLowerCase() === state.folder);
-      if (state.designtype !== 'all') arr = arr.filter(d => d.designtype === state.designtype);
-      if (state.rarity !== 'all') arr = arr.filter(d => d.rarity === state.rarity);
-      if (state.status !== 'all') arr = arr.filter(d => d.status === state.status);
-      if (state.search) {
-        const q = state.search.toLowerCase();
-        arr = arr.filter(d => (d.design + d.owner + d.artist + d.traits).toLowerCase().includes(q));
-      }
-      state.filtered = arr;
-      state.page = 1;
-    }
-
-    /* ============================================================
-       Render Grid
-    ============================================================= */
-    function renderGrid() {
-      const grid = document.getElementById('masterlist-grid');
-      const empty = document.getElementById('empty-state');
-      const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
-      if (items.length === 0) {
-        grid.innerHTML = ''; empty.classList.remove('hidden');
-      } else {
-        empty.classList.add('hidden');
-        grid.innerHTML = items.map(d => `
-          <div class="gallery-card" onclick="showProfile('${d.design}')">
-            <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
-            <div class="gallery-card-info">
-              <div class="gallery-card-title">${d.design}</div>
-              <div class="gallery-card-sub">${ARPGDEX.rarityBadge(d.rarity)} &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${d.owner}</div>
-            </div>
-          </div>`).join('');
-      }
-      ARPGDEX.renderPagination(
-        document.getElementById('pagination'),
-        state.page,
-        Math.ceil(state.filtered.length / PER_PAGE),
-        (p) => { state.page = p; renderGrid(); window.scrollTo(0,0); }
-      );
-    }
-
-    /* ============================================================
-       Show Profile
-    ============================================================= */
-    window.showProfile = (designId) => {
-      const char = ML_DATA.find(d => d.design === designId);
-      if (!char) return;
-      history.pushState({profile: designId}, '', `?profile=${encodeURIComponent(designId)}`);
-      document.getElementById('list-view').classList.add('hidden');
-      document.getElementById('profile-view').classList.remove('hidden');
-
-      // Fill header
-      document.getElementById('profile-name').textContent = char.design;
-      document.getElementById('profile-id').textContent = `#${char.id}`;
-      document.getElementById('profile-rarity-badge').innerHTML = ARPGDEX.rarityBadge(char.rarity);
-      document.getElementById('profile-img').src = char.image;
-      const ownerLinkEl = document.getElementById('profile-owner-link');
-      ownerLinkEl.textContent = char.owner;
-      ownerLinkEl.href = char.ownerlink || '#';
-
-      // Info tab — Design Info
-      document.getElementById('info-species').textContent = char.species;
-      document.getElementById('info-rarity').innerHTML = ARPGDEX.rarityBadge(char.rarity);
-      document.getElementById('info-designtype').textContent = char.designtype;
-
-      // Info tab — Sub Info
-      document.getElementById('info-subtype').textContent = char.subtype || '-';
-      document.getElementById('info-faction').textContent = char.faction || '-';
-      document.getElementById('info-growth').textContent = char.growth || '-';
-
-      // Info tab — Traits & Notes
-      document.getElementById('info-traits').textContent = char.traits;
-
-      // Info tab — Availability
-      const availMark = (val) => val
-        ? `<span style="color:#6eb56e;">O</span>`
-        : `<span style="color:#e85050;">X</span>`;
-      document.getElementById('info-avail-free').innerHTML   = availMark(char.availFree   ?? false);
-      document.getElementById('info-avail-resell').innerHTML = availMark(char.availResell ?? false);
-      document.getElementById('info-avail-paid').innerHTML   = availMark(char.availPaid   ?? false);
-
-      // Info tab — Bottom: Credits, Value, Adopt Status
-      document.getElementById('info-artist').textContent = char.artist;
-      document.getElementById('info-artist').href = char.artistlink;
-      document.getElementById('info-designer').textContent = char.designer;
-      document.getElementById('info-designer').href = char.designerlink;
-      document.getElementById('info-value').textContent = char.value ? `$${char.value}` : '-';
-      document.getElementById('info-status').textContent = char.status || '-';
-      document.getElementById('info-notes').textContent = char.notes || '-';
-
-      // Profile doc
-      const frame = document.getElementById('profile-doc-frame');
-      if (char.profiledoc) {
-        frame.src = char.profiledoc;
-        frame.style.display = '';
-      } else {
-        frame.src = '';
-        frame.style.display = 'none';
-        document.getElementById('tab-profile').innerHTML = '<div class="empty-state"><i class="fas fa-file-circle-question"></i><p>등록된 프로필 문서가 없습니다.</p></div>';
-      }
-
-      // Gallery tab — filter by character code
-      const charGallery = GALLERY_DATA_ALL.filter(g =>
-        g.characters.split(',').map(c => c.trim()).includes(designId)
-      );
-      const cgGrid = document.getElementById('char-gallery-grid');
-      const cgEmpty = document.getElementById('char-gallery-empty');
-      if (charGallery.length === 0) {
-        cgGrid.innerHTML = ''; cgEmpty.classList.remove('hidden');
-      } else {
-        cgEmpty.classList.add('hidden');
-        cgGrid.innerHTML = charGallery.map(g => `
-          <a class="post-card" href="gallery.html?post=${encodeURIComponent(g.id)}">
-            <div class="post-card-thumb">
-              <img src="${g.thumb}" alt="${g.title}" loading="lazy">
-              <div class="post-card-cat"><span class="badge badge-category">${g.category}</span></div>
-            </div>
-            <div class="post-card-body">
-              <div class="post-card-title">${g.title}</div>
-              <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${g.author}</div>
-            </div>
-          </a>`).join('');
-      }
-
-      // Status tab
-      const MAX_LEVEL = 5;
-      const STAT_DEFS = {
-        A: { name: '체력',   icon: 'fas fa-heart' },
-        B: { name: '공격',   icon: 'fas fa-sword' },
-        C: { name: '방어',   icon: 'fas fa-shield-halved' },
-        D: { name: '속도',   icon: 'fas fa-bolt' },
-        E: { name: '마력',   icon: 'fas fa-wand-sparkles' },
-        F: { name: '지능',   icon: 'fas fa-brain' },
-        G: { name: '행운',   icon: 'fas fa-clover' },
-        H: { name: '카리스마', icon: 'fas fa-star' },
-        I: { name: '스텔스', icon: 'fas fa-eye-slash' },
-        J: { name: '인내',   icon: 'fas fa-mountain' },
-      };
-      const statColors = {
-        1: 'rgba(200,169,110,0.25)', 2: 'rgba(200,169,110,0.4)',
-        3: 'rgba(200,169,110,0.6)',  4: 'rgba(200,169,110,0.8)',
-        5: 'var(--primary)'
-      };
-      const stats = char.stats ?? {};
-      document.getElementById('status-stats').innerHTML = Object.entries(stats).map(([key, val]) => {
-        const def = STAT_DEFS[key] ?? { name: key, icon: 'fas fa-circle' };
-        const pct = Math.round((val / MAX_LEVEL) * 100);
-        const dots = Array.from({length: MAX_LEVEL}, (_, i) =>
-          `<div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;
-            background:${i < val ? 'var(--primary)' : 'var(--bg-raised)'};
-            border:1px solid ${i < val ? 'var(--primary)' : 'var(--border)'};
-            transition:background .3s ${i * 0.05}s;"></div>`
-        ).join('');
-        return `
-          <div>
-            <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem;">
-              <i class="${def.icon}" style="font-size:.8rem;color:var(--primary);width:16px;text-align:center;flex-shrink:0;"></i>
-              <span style="font-size:.82rem;font-weight:600;color:var(--text-secondary);min-width:54px;flex-shrink:0;">${def.name}</span>
-              <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
-              <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:28px;text-align:right;">${val}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${MAX_LEVEL}</span></span>
-            </div>
-            <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:82px;">
-              <div class="stat-bar-fill" data-pct="${pct}"
-                style="height:100%;border-radius:100px;background:${statColors[val] ?? 'var(--primary)'};width:0%;transition:width .5s ease;"></div>
-            </div>
-          </div>`;
-      }).join('');
-
-      // Animate stat bars after render
-      setTimeout(() => {
-        document.querySelectorAll('.stat-bar-fill').forEach(el => {
-          el.style.width = el.dataset.pct + '%';
-        });
-      }, 80);
-
-      // Logs
-      const logs = LOG_DATA[designId] || [];
-      const logList = document.getElementById('log-list');
-      const logEmpty = document.getElementById('log-empty');
-      if (logs.length === 0) {
-        logList.innerHTML = ''; logEmpty.classList.remove('hidden');
-      } else {
-        logEmpty.classList.add('hidden');
-        logList.innerHTML = logs.map(l => `
-          <div class="log-row">
-            <span class="log-time">${l.timestamp}</span>
-            <span>${l.reason}</span>
-          </div>`).join('');
-      }
-
-      // Prev/Next
-      const idx = state.filtered.findIndex(d => d.design === designId);
-      const prev = state.filtered[idx - 1];
-      const next = state.filtered[idx + 1];
-      const prevEl = document.getElementById('prev-entry');
-      const nextEl = document.getElementById('next-entry');
-      if (prev) {
-        prevEl.style.display = '';
-        document.getElementById('prev-name').textContent = prev.design;
-        prevEl.onclick = (e) => { e.preventDefault(); showProfile(prev.design); };
-      } else prevEl.style.display = 'none';
-      if (next) {
-        nextEl.style.display = '';
-        document.getElementById('next-name').textContent = next.design;
-        nextEl.onclick = (e) => { e.preventDefault(); showProfile(next.design); };
-      } else nextEl.style.display = 'none';
-
-      // Reset tabs
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      document.querySelector('.tab-btn[data-tab="info"]').classList.add('active');
-      document.getElementById('tab-info').classList.add('active');
-
-      window.scrollTo(0, 0);
-    };
-
-    /* Tab switching */
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-      });
-    });
-
-    /* Back */
-    document.getElementById('back-btn').addEventListener('click', () => {
-      history.pushState({}, '', 'masterlist.html');
-      document.getElementById('profile-view').classList.add('hidden');
-      document.getElementById('list-view').classList.remove('hidden');
-    });
-    window.addEventListener('popstate', () => {
-      const profileId = ARPGDEX.getParam('profile');
-      if (profileId) showProfile(profileId);
-      else {
-        document.getElementById('profile-view').classList.add('hidden');
-        document.getElementById('list-view').classList.remove('hidden');
-      }
-    });
-
-    /* Filter events */
-    ['designtype','rarity','status'].forEach(key => {
-      document.getElementById(`filter-${key}`).addEventListener('change', (e) => {
-        state[key] = e.target.value; filterData(); renderGrid();
-      });
-    });
-    document.getElementById('search-input').addEventListener('input',
-      ARPGDEX.debounce((e) => { state.search = e.target.value; filterData(); renderGrid(); })
-    );
-    document.querySelectorAll('[data-folder]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-folder]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.folder = btn.dataset.folder; filterData(); renderGrid();
-      });
-    });
-
-    /* Init */
-    document.addEventListener('DOMContentLoaded', () => {
-      const profileId = ARPGDEX.getParam('profile');
-      filterData();
-      if (profileId) showProfile(profileId);
-      else renderGrid();
-    });
-
-    /* Responsive info-grid */
-    function checkInfoGrid() {
-      const g = document.querySelector('.info-grid');
-      if (!g) return;
-      g.style.gridTemplateColumns = window.innerWidth < 640 ? '1fr' : '1fr 1fr';
-    }
-    window.addEventListener('resize', checkInfoGrid);
-    document.addEventListener('DOMContentLoaded', checkInfoGrid);
 
   </script>
 </body>
