@@ -1,60 +1,98 @@
 /* ============================================================= */
-/* ARPGDEX Base — loads header/footer and builds nav dynamically */
+/* ARPGDEX Base — nav/footer 로드 + MenuSet 시트 연동           */
 /* ============================================================= */
-import { NAV_ITEMS } from './nav-config.js';
+import { ARPGDEX } from './utils.js';
 
 const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 
-const ARPGDEX_SITE = {
-  title: "ARPGDEX",
-  url: "https://m4ch1n4097.github.io/ARPGDEX_TEST/",
-  description: "창작 종족 ARPG 관리 시스템"
-};
+/* ---- 전역 메뉴 데이터 ---------------------------------------- */
+export const MENU_GROUPS = [];
 
-/* ---- Favicon 로드 (MainOption!F38) --------------------------- */
-async function loadFavicon() {
+/* ---- MenuSet 탭 로드 ----------------------------------------- */
+export async function loadMenu() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F38`;
-    const text = await fetch(url).then(r => r.text());
-    const json = JSON.parse(text.substring(47).slice(0, -2));
-    const cell = json?.table?.rows?.[0]?.c?.[0];
-    const rawUrl = cell?.v || cell?.f || '';
-    if (!rawUrl) return;
+    await ARPGDEX.loadStrings();
+    const rows = await ARPGDEX.importSheet('MenuSet');
+    if (!rows.length) throw new Error('empty');
 
-    // 구글 드라이브 링크 → 직접 표시 가능한 URL로 변환
-    const m = rawUrl.match(/\/d\/([\w-]+)/);
-    const faviconUrl = m
-      ? `https://drive.google.com/uc?id=${m[1]}&export=view`
-      : rawUrl;
+    const normalize = r => ({
+      id:       Number(r['id']        || 0),
+      parentId: Number(r['topmenuid'] || 0),
+      stringId: Number(r['menunameid']|| 0),
+      link:     String(r['link']      || ''),
+      hide:     ARPGDEX.toBool(r['hide'] || false),
+    });
 
-    // <link rel="icon"> 태그 설정
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = faviconUrl;
+    const items = rows.map(normalize).filter(r => !r.hide && r.id);
+
+    // 스트링 → 라벨
+    items.forEach(item => {
+      item.label = (item.stringId ? ARPGDEX.S(item.stringId) : '') || String(item.id);
+    });
+
+    // 상위 메뉴 (parentId === 0)
+    const tops = items.filter(r => r.parentId === 0).sort((a,b) => a.id - b.id);
+
+    // MENU_GROUPS 채우기
+    MENU_GROUPS.length = 0;
+    tops.forEach(top => {
+      MENU_GROUPS.push({
+        id:    top.id,
+        label: top.label,
+        link:  top.link,
+        items: items
+          .filter(r => r.parentId === top.id)
+          .sort((a,b) => a.id - b.id)
+          .map(r => ({
+            id:       r.id,
+            label:    r.label,
+            href:     r.link || '#',
+            external: !!(r.link && !r.link.endsWith('.html') && !r.link.startsWith('#') && r.link !== ''),
+          }))
+      });
+    });
+
   } catch(e) {
-    /* 실패해도 무시 */
+    console.warn('[ARPGDEX] MenuSet 로드 실패, nav-config 사용:', e);
+    try {
+      const { NAV_ITEMS } = await import('./nav-config.js');
+      MENU_GROUPS.length = 0;
+      NAV_ITEMS.forEach((g, i) => {
+        MENU_GROUPS.push({
+          id: i+1, label: g.label, icon: g.icon || '', link: '',
+          items: g.items.map((item, j) => ({
+            id: j+1, label: item.label, href: item.href, external: false
+          }))
+        });
+      });
+    } catch(e2) {}
   }
 }
 
-/* ---- Build nav HTML from config ----------------------------- */
+/* ---- Nav HTML 생성 ------------------------------------------ */
 function buildNav() {
   const path = location.pathname.split('/').pop() || 'index.html';
 
-  const dropdowns = NAV_ITEMS.map(group => `
-    <li class="nav-item">
-      <a href="#" style="display:flex;align-items:center;gap:.3rem;">
-        ${group.label} <i class="fas fa-chevron-down" style="font-size:.5rem;"></i>
-      </a>
-      <div class="nav-dropdown">
-        ${group.items.map(item => `
-          <a href="${item.href}" class="${item.href === path ? 'active' : ''}">${item.label}</a>
-        `).join('')}
-      </div>
-    </li>`).join('');
+  const dropdowns = MENU_GROUPS.map(group => {
+    const subItems = group.items.map(item => {
+      const target = item.external ? ' target="_blank" rel="noopener"' : '';
+      const active = item.href === path ? ' class="active"' : '';
+      return `<a href="${item.href}"${target}${active}>${item.label}</a>`;
+    }).join('');
+
+    if (!group.items.length && group.link) {
+      const ext = (!group.link.endsWith('.html') && !group.link.startsWith('#')) ? ' target="_blank" rel="noopener"' : '';
+      return `<li class="nav-item"><a href="${group.link}"${ext}>${group.label}</a></li>`;
+    }
+
+    return `
+      <li class="nav-item">
+        <a href="#" style="display:flex;align-items:center;gap:.3rem;">
+          ${group.label} <i class="fas fa-chevron-down" style="font-size:.5rem;"></i>
+        </a>
+        <div class="nav-dropdown">${subItems}</div>
+      </li>`;
+  }).join('');
 
   return `
     <nav id="arpg-nav">
@@ -70,31 +108,44 @@ function buildNav() {
     </nav>`;
 }
 
-/* ---- Load includes ------------------------------------------ */
+/* ---- Favicon 로드 (MainOption!F38) --------------------------- */
+async function loadFavicon() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F38`;
+    const text = await fetch(url).then(r => r.text());
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const cell = json?.table?.rows?.[0]?.c?.[0];
+    const rawUrl = cell?.v || cell?.f || '';
+    if (!rawUrl) return;
+    const m = rawUrl.match(/\/d\/([\w-]+)/);
+    const faviconUrl = m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : rawUrl;
+    let link = document.querySelector("link[rel~='icon']");
+    if (link) link.href = faviconUrl;
+  } catch(e) {}
+}
+
+/* ---- Includes 로드 ------------------------------------------ */
 async function loadIncludes() {
-  const headerEls = document.querySelectorAll('[data-include="includes/header.html"]');
-  headerEls.forEach(el => {
+  document.querySelectorAll('[data-include="includes/header.html"]').forEach(el => {
     const div = document.createElement('div');
     div.innerHTML = buildNav();
     el.replaceWith(div.firstElementChild);
   });
 
-  const footerEls = document.querySelectorAll('[data-include="includes/footer.html"]');
-  for (const el of footerEls) {
+  for (const el of document.querySelectorAll('[data-include="includes/footer.html"]')) {
     try {
-      const res = await fetch('includes/footer.html');
-      const html = await res.text();
+      const html = await fetch('includes/footer.html').then(r => r.text());
       const div = document.createElement('div');
       div.innerHTML = html;
       el.replaceWith(div.firstElementChild);
-    } catch(e) { /* skip on file:// */ }
+    } catch(e) {}
   }
 
   document.getElementById('navToggle')?.addEventListener('click', () => {
-    document.getElementById('navLinks').classList.toggle('open');
+    document.getElementById('navLinks')?.classList.toggle('open');
   });
   document.querySelectorAll('#navLinks .nav-item > a').forEach(a => {
-    a.addEventListener('click', (e) => {
+    a.addEventListener('click', e => {
       if (window.innerWidth <= 768 && a.nextElementSibling?.classList.contains('nav-dropdown')) {
         e.preventDefault();
         a.parentElement.classList.toggle('open');
@@ -103,15 +154,9 @@ async function loadIncludes() {
   });
 }
 
-function updateMeta() {
-  const title = document.title;
-  if (title.includes('ARPGDEX')) {
-    document.title = title.replace('ARPGDEX', ARPGDEX_SITE.title);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadIncludes();
-  updateMeta();
-  loadFavicon();
+/* ---- DOMContentLoaded --------------------------------------- */
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadMenu();        // 메뉴 먼저 (스트링 포함)
+  await loadIncludes();    // nav 렌더
+  loadFavicon();           // 비동기 (기다릴 필요 없음)
 });

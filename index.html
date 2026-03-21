@@ -7,6 +7,7 @@
   <meta name="robots" content="noai, noimageai">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   <link rel="stylesheet" href="arpgdex.css">
+  <link rel="icon" href="data:,">
 </head>
 <body>
 
@@ -77,9 +78,8 @@
   <script src="js/base.js" type="module"></script>
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
-    import { MENU_GROUPS } from './js/base.js';
+    import { MENU_GROUPS, loadMenu } from './js/base.js';
 
-    // --- Mock data ---
     const mockDesigns = [
       { design: 'CHA-001', image: 'https://picsum.photos/seed/c1/200/200', owner: 'Alice' },
       { design: 'CHA-002', image: 'https://picsum.photos/seed/c2/200/200', owner: 'Bob' },
@@ -93,38 +93,35 @@
       { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', thumb: 'https://picsum.photos/seed/g3/400/225' },
     ];
 
-    const mockStaff = [];
+    document.addEventListener('DOMContentLoaded', async () => {
 
-    document.addEventListener('DOMContentLoaded', () => {
-
-      // Hero description — load from main.html
+      // Hero description
       fetch('main.html')
         .then(r => r.text())
         .then(html => { document.getElementById('hero-desc').innerHTML = html; })
         .catch(() => { document.getElementById('hero-desc').textContent = '소개 글을 불러오지 못했습니다.'; });
 
-      // Quick Links — MENU_GROUPS에서 동적 생성 (base.js 로드 완료 후 실행)
-      // base.js의 DOMContentLoaded 이후 시점이므로 MENU_GROUPS가 채워진 상태
+      // base.js의 loadMenu가 이미 실행됐을 수 있으므로 채워진 경우 바로, 아니면 대기
       const renderQuickLinks = () => {
         const el = document.getElementById('quick-links');
         if (!el) return;
-        if (!MENU_GROUPS.length) {
-          setTimeout(renderQuickLinks, 200);
-          return;
-        }
         el.innerHTML = MENU_GROUPS.map(group => `
           <div>
             <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">
-              ${group.icon ? `<i class="${group.icon} fa-fw" style="margin-right:.3rem;"></i>` : ''}${group.label}
+              ${group.label}
             </div>
             <ul class="link-list">
               ${group.items.map(item => {
                 const target = item.external ? ' target="_blank" rel="noopener"' : '';
-                return `<li><a href="${item.href || '#'}"${target}>${item.label}</a></li>`;
+                return `<li><a href="${item.href}"${target}>${item.label}</a></li>`;
               }).join('')}
             </ul>
           </div>`).join('');
       };
+
+      // MENU_GROUPS는 base.js DOMContentLoaded에서 채워지므로
+      // 이 스크립트의 DOMContentLoaded와 경쟁할 수 있어 loadMenu 재호출로 보장
+      await loadMenu();
       renderQuickLinks();
 
       // Designs
