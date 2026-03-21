@@ -292,39 +292,49 @@
 
     /* ---- 시트 컬럼 → 내부 필드 정규화 ---- */
     function normalizeChar(row) {
-      // 시트 컬럼명이 소문자+공백제거 형태로 들어옴
-      // 스탯: stata ~ statj 또는 stat_a ~ stat_j 또는 a ~ j
+      // 스탯: stata~statj, stat_a~stat_j, a~j 등 다양한 형태 지원
       const stat = (k) => {
-        const candidates = [`stat${k.toLowerCase()}`, `stat_${k.toLowerCase()}`, k.toLowerCase()];
-        for (const c of candidates) if (row[c] !== undefined && row[c] !== '') return Number(row[c]) || 0;
+        const key = k.toLowerCase();
+        const candidates = [`stat${key}`, `stat_${key}`, key, `스탯${key}`];
+        for (const c of candidates) {
+          if (row[c] !== undefined && row[c] !== '') return Number(row[c]) || 0;
+        }
         return 0;
       };
+      // 컬럼값 가져오기 (여러 후보명 중 첫 번째 유효값)
+      const get = (...keys) => {
+        for (const k of keys) {
+          const v = row[k.toLowerCase().replace(/\s/g,'')];
+          if (v !== undefined && v !== '') return v;
+        }
+        return '';
+      };
       return {
-        id:         row['id']          ?? '',
-        design:     row['design']      ?? row['code']      ?? '',
-        species:    row['species']     ?? '',
-        rarity:     row['rarity']      ?? '',
-        designtype: row['designtype']  ?? row['design_type'] ?? row['designtype'] ?? '',
-        subtype:    row['subtype']     ?? row['sub_type']   ?? '',
-        faction:    row['faction']     ?? '',
-        growth:     row['growth']      ?? row['growthstage'] ?? '',
-        owner:      row['owner']       ?? '',
-        ownerlink:  row['ownerlink']   ?? row['owner_link'] ?? '#',
-        artist:     row['artist']      ?? '',
-        artistlink: row['artistlink']  ?? row['artist_link'] ?? '#',
-        designer:   row['designer']    ?? '',
-        designerlink: row['designerlink'] ?? row['designer_link'] ?? '#',
-        traits:     row['traits']      ?? '',
-        availFree:   ARPGDEX.toBool(row['availfree']   ?? row['avail_free']   ?? row['무료분양'] ?? false),
-        availResell: ARPGDEX.toBool(row['availresell'] ?? row['avail_resell'] ?? row['재분양']   ?? false),
-        availPaid:   ARPGDEX.toBool(row['availpaid']   ?? row['avail_paid']   ?? row['유료분양'] ?? false),
-        value:      row['value']       ?? '',
-        status:     row['status']      ?? row['adoptstatus'] ?? '',
-        notes:      row['notes']       ?? '',
-        image:      row['image']       ?? row['img']        ?? '',
-        profiledoc: row['profiledoc']  ?? row['profile_doc'] ?? row['profilelink'] ?? '',
-        xp:         Number(row['xp']   ?? 0),
-        xpNext:     Number(row['xpnext'] ?? row['xp_next'] ?? 500),
+        id:           get('id'),
+        design:       get('design', 'code', 'designcode', 'design_code'),
+        species:      get('species'),
+        rarity:       get('rarity'),
+        designtype:   get('designtype', 'design_type', 'type'),
+        subtype:      get('subtype', 'sub_type', 'sub'),
+        faction:      get('faction'),
+        growth:       get('growth', 'growthstage', 'growth_stage', 'stage'),
+        owner:        get('owner'),
+        ownerlink:    get('ownerlink', 'owner_link', 'ownerurl') || '#',
+        artist:       get('artist'),
+        artistlink:   get('artistlink', 'artist_link', 'artisturl') || '#',
+        designer:     get('designer'),
+        designerlink: get('designerlink', 'designer_link', 'designerurl') || '#',
+        traits:       get('traits', 'trait'),
+        availFree:    ARPGDEX.toBool(get('availfree', 'avail_free', 'freegift', 'free_gift', '무료분양')),
+        availResell:  ARPGDEX.toBool(get('availresell', 'avail_resell', 'resell', '재분양')),
+        availPaid:    ARPGDEX.toBool(get('availpaid', 'avail_paid', 'paid', '유료분양')),
+        value:        get('value'),
+        status:       get('status', 'adoptstatus', 'adopt_status'),
+        notes:        get('notes', 'note', 'memo'),
+        image:        ARPGDEX.driveImgUrl(get('image', 'img', 'imageurl', 'image_url')),
+        profiledoc:   get('profiledoc', 'profile_doc', 'profilelink', 'profile_link', 'profileurl'),
+        xp:           Number(get('xp') || 0),
+        xpNext:       Number(get('xpnext', 'xp_next', 'nextxp') || 500),
         stats: {
           A: stat('A'), B: stat('B'), C: stat('C'), D: stat('D'), E: stat('E'),
           F: stat('F'), G: stat('G'), H: stat('H'), I: stat('I'), J: stat('J'),
@@ -339,6 +349,15 @@
         ARPGDEX.loadStrings(),
         ARPGDEX.importSheet('MasterList'),
       ]);
+
+      // ▼ 디버그: 실제 컬럼명 확인 (연동 성공 후 제거 가능)
+      if (rawML.length > 0) {
+        console.log('[ARPGDEX] MasterList 컬럼명:', Object.keys(rawML[0]));
+        console.log('[ARPGDEX] 첫 번째 행 데이터:', rawML[0]);
+        console.log('[ARPGDEX] String 로드됨:', ARPGDEX._strings);
+      } else {
+        console.warn('[ARPGDEX] MasterList 데이터 없음 — 시트 공유 설정 또는 탭명 확인 필요');
+      }
 
       // ID가 0이 아닌 행만, ID 내림차순 정렬
       ML_DATA = rawML

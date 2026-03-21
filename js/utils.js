@@ -5,7 +5,6 @@
 const ARPGDEX = {};
 
 /* ---- Config -------------------------------------------------- */
-// ARPGDEX [데이터] 시트 ID
 ARPGDEX.sheetId = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 
 /* ---- URL Helpers --------------------------------------------- */
@@ -16,22 +15,40 @@ ARPGDEX.pageUrl = (page) => {
 };
 
 /* ---- Import Sheet -------------------------------------------- */
-// sheetId 생략 시 기본 ARPGDEX[데이터] 사용
+/*
+  시트 구조:
+  - 1행: 제목/설명 (무시)
+  - 2행: 컬럼 헤더 (!로 시작하는 컬럼은 코드에서 사용 안 함)
+  - 3행~: 실제 데이터
+  → range=A2:ZZ 로 2행부터 읽고, headers=1 로 2행을 헤더로 사용
+*/
 ARPGDEX.importSheet = async (sheetPage, sheetId) => {
   const id = sheetId || ARPGDEX.sheetId;
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&tq=WHERE%20A%20IS%20NOT%20NULL&sheet=${encodeURIComponent(sheetPage)}`;
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheetPage)}&range=A2:ZZ`;
   try {
     const text = await fetch(url).then(r => r.text());
     const json = JSON.parse(text.substring(47).slice(0, -2));
-    const cols = json.table.cols.map(c => c.label.toLowerCase().replace(/\s/g,''));
-    return json.table.rows.map(row => {
-      const obj = {};
-      cols.forEach((col, i) => {
-        const cell = row.c[i];
-        obj[col] = cell == null ? '' : (cell.f ?? cell.v ?? '');
-      });
-      return obj;
+
+    // 컬럼 헤더: !로 시작하는 것 제외, 소문자+공백제거
+    const cols = json.table.cols.map(c => {
+      const label = c.label || '';
+      return label.startsWith('!') ? null : label.toLowerCase().replace(/\s/g, '');
     });
+
+    return json.table.rows
+      .map(row => {
+        const obj = {};
+        cols.forEach((col, i) => {
+          if (!col) return; // ! 컬럼 스킵
+          const cell = row.c[i];
+          obj[col] = cell == null ? '' : (cell.f ?? cell.v ?? '');
+        });
+        return obj;
+      })
+      .filter(row => {
+        // 완전히 빈 행 제외 (모든 값이 빈 문자열)
+        return Object.values(row).some(v => v !== '' && v !== null && v !== undefined);
+      });
   } catch(e) {
     console.warn('Sheet import failed:', sheetPage, e);
     return [];
@@ -39,41 +56,43 @@ ARPGDEX.importSheet = async (sheetPage, sheetId) => {
 };
 
 /* ---- Load String Table --------------------------------------- */
-// String 탭에서 ID → KOR 맵 반환
+// String 탭: ID 컬럼 → KOR 컬럼 맵
 ARPGDEX._strings = {};
 ARPGDEX.loadStrings = async () => {
   const rows = await ARPGDEX.importSheet('String');
   const map = {};
   for (const row of rows) {
-    const id = Number(row['id'] ?? row['!id'] ?? '');
-    const kor = row['kor'] ?? row['KOR'] ?? '';
+    // 컬럼명이 소문자 처리됨: 'id', 'kor'
+    const id  = Number(row['id']  ?? row['!id'] ?? '');
+    const kor = String(row['kor'] ?? '').trim();
     if (id && kor) map[id] = kor;
   }
   ARPGDEX._strings = map;
   return map;
 };
-// S(id) — 스트링 ID로 텍스트 반환
+
+// S(id) — 스트링 ID로 한국어 텍스트 반환
 ARPGDEX.S = (id) => ARPGDEX._strings[id] || '';
 
-/* ---- Scrub (lowercase alphanumeric) -------------------------- */
+/* ---- Scrub --------------------------------------------------- */
 ARPGDEX.scrub = (str) => {
   if (!str) return '';
   return String(str).toLowerCase().replace(/[^a-z0-9]/g, '');
 };
 
-/* ---- Simple debounce ----------------------------------------- */
+/* ---- Debounce ------------------------------------------------ */
 ARPGDEX.debounce = (fn, ms = 200) => {
   let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 };
 
-/* ---- Pagination helper --------------------------------------- */
+/* ---- Pagination ---------------------------------------------- */
 ARPGDEX.paginate = (arr, page, perPage) => {
   const total = Math.ceil(arr.length / perPage);
   const start = (page - 1) * perPage;
   return { items: arr.slice(start, start + perPage), total, page };
 };
 
-/* ---- Render pagination buttons ------------------------------ */
+/* ---- Render Pagination --------------------------------------- */
 ARPGDEX.renderPagination = (container, current, total, onChange) => {
   if (!container || total <= 1) { if(container) container.innerHTML=''; return; }
   let html = '';
@@ -94,7 +113,7 @@ ARPGDEX.renderPagination = (container, current, total, onChange) => {
   });
 };
 
-/* ---- Rarity badge ------------------------------------------- */
+/* ---- Rarity Badge -------------------------------------------- */
 ARPGDEX.rarityBadge = (rarity) => {
   if (!rarity) return '';
   const cls = ARPGDEX.scrub(rarity).replace('veryrare','veryrare').replace('very rare','veryrare');
@@ -102,11 +121,20 @@ ARPGDEX.rarityBadge = (rarity) => {
 };
 
 /* ---- Bool from sheet cell ------------------------------------ */
-// TRUE / FALSE / "O" / "X" / 1 / 0 을 boolean으로 변환
+// TRUE / FALSE / "O" / "X" / 1 / 0 인식
 ARPGDEX.toBool = (val) => {
   if (typeof val === 'boolean') return val;
   const s = String(val).trim().toLowerCase();
   return s === 'true' || s === '1' || s === 'o' || s === 'yes';
+};
+
+/* ---- Google Drive 이미지 URL 변환 ----------------------------- */
+// drive.google.com/file/d/ID/view → uc?id=ID&export=view 형식으로
+ARPGDEX.driveImgUrl = (url) => {
+  if (!url) return '';
+  const m = url.match(/\/d\/([\w-]+)/);
+  if (m) return `https://drive.google.com/uc?id=${m[1]}&export=view`;
+  return url;
 };
 
 export { ARPGDEX };
