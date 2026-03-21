@@ -9,11 +9,22 @@ const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 export const MENU_GROUPS = [];
 export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLink: '' };
 
-/* ---- sessionStorage 헬퍼 (버전 키로 캐시 자동 무효화) ------- */
+/* ---- sessionStorage 헬퍼 (버전 키 + TTL 5분) --------------- */
 const CACHE_VER = 'v5';
+const CACHE_TTL = 5 * 60 * 1000; // 5분
 const cache = {
-  get: (key) => { try { const v = sessionStorage.getItem(CACHE_VER + key); return v ? JSON.parse(v) : null; } catch(e) { return null; } },
-  set: (key, val) => { try { sessionStorage.setItem(CACHE_VER + key, JSON.stringify(val)); } catch(e) {} },
+  get: (key) => {
+    try {
+      const v = sessionStorage.getItem(CACHE_VER + key);
+      if (!v) return null;
+      const { data, ts } = JSON.parse(v);
+      if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_VER + key); return null; }
+      return data;
+    } catch(e) { return null; }
+  },
+  set: (key, val) => {
+    try { sessionStorage.setItem(CACHE_VER + key, JSON.stringify({ data: val, ts: Date.now() })); } catch(e) {}
+  },
 };
 
 /* ---- MenuSet 탭 로드 ---------------------------------------- */
