@@ -218,7 +218,7 @@
             </div>
 
             <div style="margin-top:1rem;padding:.6rem 1rem;background:var(--bg-faded);border-radius:var(--radius);font-size:.8rem;text-align:center;color:var(--text-muted);">
-              정보 수정이 필요하신 경우 <a href="#">이 곳</a>에서 신청해 주세요.
+              <span data-sid="34">정보 수정이 필요하신 경우 <a href="#">이 곳</a>에서 신청해 주세요.</span>
             </div>
           </div>
 
@@ -248,24 +248,24 @@
             <div class="post-grid" id="char-gallery-grid"></div>
             <div class="empty-state hidden" id="char-gallery-empty">
               <i class="fas fa-image"></i>
-              <p>이 캐릭터가 등장하는 갤러리 게시물이 없습니다.</p>
+              <p data-sid="29">이 캐릭터가 등장하는 갤러리 게시물이 없습니다.</p>
             </div>
           </div>
 
           <!-- LOGS Tab -->
           <div class="tab-pane" id="tab-logs">
-            <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:1rem;">
+            <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:1rem;" data-sid="30">
               Transaction Log
             </div>
             <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.75rem;">
               <div class="log-row" style="font-weight:700;color:var(--text-secondary);">
-                <span>Timestamp</span><span>Reason</span>
+                <span data-sid="31">Timestamp</span><span data-sid="32">Reason</span>
               </div>
             </div>
             <div id="log-list"></div>
             <div class="empty-state hidden" id="log-empty">
               <i class="fas fa-scroll"></i>
-              <p>거래 기록이 없습니다.</p>
+              <p data-sid="33">거래 기록이 없습니다.</p>
             </div>
           </div>
 
@@ -492,11 +492,20 @@
 
 
     /* ---- 유저 ID → 이름 변환 ---- */
+    // isRegistered: UserInventory에 있으면 true
     function userName(discordId) {
-      if (!discordId) return '-';
+      if (!discordId) return { text: '-', registered: false };
       const found = OPT.users[String(discordId).trim()];
-      if (found) return found;
-      return `${discordId} (외부 인원)`;
+      if (found) return { text: found, registered: true };
+      return { text: `${discordId} (외부 인원)`, registered: false };
+    }
+    // 아이콘 포함 표시용 (리스트에 있으면 아이콘 O, 없으면 X)
+    function userNameHTML(discordId, iconClass = 'fas fa-user') {
+      const { text, registered } = userName(discordId);
+      if (!discordId || text === '-') return '-';
+      return registered
+        ? `<i class="${iconClass}" style="font-size:.75rem;margin-right:.35rem;opacity:.7;"></i>${text}`
+        : text;
     }
 
     /* ---- XP 헬퍼 ---- */
@@ -609,7 +618,7 @@
               <div class="gallery-card-title">${d.design}${d.charaname ? ' · ' + d.charaname : ''}</div>
               <div class="gallery-card-sub">
                 ${rarityBadge(d.rarity)}
-                &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${userName(d.owner)}
+                &nbsp;${userNameHTML(d.owner)}
               </div>
             </div>
           </div>`).join('');
@@ -639,7 +648,7 @@
       document.getElementById('profile-rarity-badge').innerHTML = rarityBadge(char.rarity);
       document.getElementById('profile-img').src = char.image;
       const ownerEl = document.getElementById('profile-owner-link');
-      ownerEl.textContent = userName(char.owner);
+      ownerEl.innerHTML = userNameHTML(char.owner);
       ownerEl.href = char.ownerlink || '#';
 
       // Design Info
@@ -664,10 +673,10 @@
       document.getElementById('info-avail-paid').innerHTML   = mark(char.availPaid);
 
       // Credits / Value / Status / Notes
-      document.getElementById('info-artist').textContent   = userName(char.artist);
-      document.getElementById('info-artist').href          = char.artistlink;
-      document.getElementById('info-designer').textContent = userName(char.designer);
-      document.getElementById('info-designer').href        = char.designerlink;
+      document.getElementById('info-artist').innerHTML   = userNameHTML(char.artist,   'fas fa-pen-nib');
+      document.getElementById('info-artist').href        = char.artistlink;
+      document.getElementById('info-designer').innerHTML = userNameHTML(char.designer, 'fas fa-pen-ruler');
+      document.getElementById('info-designer').href      = char.designerlink;
       document.getElementById('info-value').textContent    = char.value ? `$${char.value}` : '-';
       document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
       document.getElementById('info-notes').textContent    = char.notes  || '-';
@@ -684,11 +693,11 @@
 
       if (docUrl) {
         tabProfile.innerHTML = `
-          <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">소유자가 작성한 캐릭터 프로필입니다.</div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">${ARPGDEX.S(28) || '소유자가 작성한 캐릭터 프로필입니다.'}</div>
           <iframe id="profile-doc-frame" class="embed-frame" src="${docUrl}" allowfullscreen style="min-height:600px;"></iframe>`;
       } else {
         tabProfile.innerHTML =
-          '<div class="empty-state"><i class="fas fa-file-circle-question"></i><p>등록된 프로필 문서가 없습니다.</p></div>';
+          `<div class="empty-state"><i class="fas fa-file-circle-question"></i><p>${ARPGDEX.S(27) || '등록된 프로필 문서가 없습니다.'}</p></div>`;
       }
 
       // Gallery tab — 캐릭터 코드 필터 (갤러리 미연동 시 안내)
