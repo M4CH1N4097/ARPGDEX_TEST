@@ -92,6 +92,15 @@
       <div id="recent-prompts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"></div>
     </div>
 
+    <!-- Staff -->
+    <div class="section-card fade-in" style="animation-delay:.25s">
+      <div class="section-card-header">
+        <h3><a href="staff.html">Staff</a></h3>
+        <a href="staff.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div id="recent-staff" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;"></div>
+    </div>
+
   </div>
 
   <div data-include="includes/footer.html"></div>
@@ -117,6 +126,12 @@
     const mockPrompts = [
       { title: '달빛 산책', description: '달빛이 비치는 밤거리를 걷는 장면을 그려주세요.', enddate: '2025-12-31' },
       { title: '봄맞이 소풍', description: '봄날 꽃이 핀 들판에서의 소풍 장면을 그려주세요.', enddate: '2025-11-30' },
+    ];
+
+    const mockStaff = [
+      { username: 'AdminA', jobtitle: 'Owner', image: 'https://picsum.photos/seed/s1/200/200' },
+      { username: 'ModB',   jobtitle: 'Moderator', image: 'https://picsum.photos/seed/s2/200/200' },
+      { username: 'ArtistC', jobtitle: 'Guest Artist', image: 'https://picsum.photos/seed/s3/200/200' },
     ];
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -154,6 +169,20 @@
           <div class="card-body" style="font-size:.875rem;color:var(--text-secondary)">${p.description}</div>
           <div class="card-footer" style="font-size:.75rem;color:var(--text-muted)">
             <i class="far fa-calendar fa-fw"></i> 마감: ${p.enddate}
+          </div>
+        </div>`).join('');
+
+      // Staff
+      const staffEl = document.getElementById('recent-staff');
+      staffEl.innerHTML = mockStaff.map(s => `
+        <div class="card" style="padding:1rem;">
+          <div style="display:flex;align-items:center;gap:.85rem;">
+            <img src="${s.image}" alt="${s.username}"
+              style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border-strong);flex-shrink:0;">
+            <div>
+              <div style="font-family:var(--font-heading);font-size:.9rem;font-weight:600;">${s.username}</div>
+              <div style="font-size:.75rem;color:var(--primary);font-weight:600;letter-spacing:.04em;margin-top:.1rem;">${s.jobtitle}</div>
+            </div>
           </div>
         </div>`).join('');
     });
