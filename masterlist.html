@@ -394,8 +394,7 @@
           if (stgVal && stageSid)   OPT.growth[stgVal]  = ARPGDEX.S(stageSid)   || stgVal;
         }
 
-        console.log('[ARPGDEX] 옵션 로드됨:', OPT);
-      } catch(e) {
+        } catch(e) {
         console.warn('[ARPGDEX] 옵션 로드 실패 (필터는 raw 값으로 동작):', e);
       }
     }
