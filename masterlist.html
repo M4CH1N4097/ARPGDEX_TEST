@@ -342,36 +342,105 @@
     }
 
     /* ---- 데이터 로드 ---- */
-    async function loadData() {
-      // 스트링 + 마스터리스트 병렬 로드
-      const [, rawML] = await Promise.all([
-        ARPGDEX.loadStrings(),
-        ARPGDEX.importSheet('MasterList'),
+    /* ============================================================
+       옵션 탭 로드 → value:변수명, stringid:스트링ID 구조
+       결과: { value: 'dog', label: '강아지' } 형태의 배열
+    ============================================================= */
+    // 각 탭별 옵션 맵: { [value]: label }
+    let OPT = { species: {}, subtype: {}, status: {}, designtype: {} };
+
+    async function loadOptions() {
+      const [subOpt, speciesData, subTypeData, statusData] = await Promise.all([
+        ARPGDEX.importSheet('SubOption'),
+        ARPGDEX.importSheet('SpeciesData'),
+        ARPGDEX.importSheet('SubTypeData'),
+        ARPGDEX.importSheet('StatusData'),
       ]);
 
-      // ▼ 디버그: 실제 컬럼명 확인 (연동 성공 후 제거 가능)
-      if (rawML.length > 0) {
-        console.log('[ARPGDEX] MasterList 컬럼명:', Object.keys(rawML[0]));
-        console.log('[ARPGDEX] 첫 번째 행 데이터:', rawML[0]);
-        console.log('[ARPGDEX] String 로드됨:', ARPGDEX._strings);
-      } else {
-        console.warn('[ARPGDEX] MasterList 데이터 없음 — 시트 공유 설정 또는 탭명 확인 필요');
+      // SubOption → designtype 옵션
+      for (const row of subOpt) {
+        const val = row['value'] || row['id'] || '';
+        const sid = Number(row['stringstringid'] || row['stringid'] || row['strid'] || 0);
+        if (val) OPT.designtype[val] = sid ? (ARPGDEX.S(sid) || val) : val;
+      }
+      // SpeciesData → species 옵션
+      for (const row of speciesData) {
+        const val = row['value'] || row['id'] || '';
+        const sid = Number(row['stringstringid'] || row['stringid'] || row['strid'] || 0);
+        if (val) OPT.species[val] = sid ? (ARPGDEX.S(sid) || val) : val;
+      }
+      // SubTypeData → subtype 옵션 (폴더 분류용)
+      for (const row of subTypeData) {
+        const val = row['value'] || row['id'] || '';
+        const sid = Number(row['stringstringid'] || row['stringid'] || row['strid'] || 0);
+        if (val) OPT.subtype[val] = sid ? (ARPGDEX.S(sid) || val) : val;
+      }
+      // StatusData → status(거래상태) 옵션
+      for (const row of statusData) {
+        const val = row['value'] || row['id'] || '';
+        const sid = Number(row['stringstringid'] || row['stringid'] || row['strid'] || 0);
+        if (val) OPT.status[val] = sid ? (ARPGDEX.S(sid) || val) : val;
       }
 
-      // ID가 0이 아닌 행만, ID 내림차순 정렬
-      ML_DATA = rawML
-        .map(normalizeChar)
-        .filter(c => c.id && Number(c.id) !== 0 && c.design)  // id=0 제외, hide는 utils에서 처리
-        .sort((a, b) => Number(b.id) - Number(a.id));
+      console.log('[ARPGDEX] 옵션 로드됨:', OPT);
+      // 각 탭의 첫 행 컬럼 확인용
+      if (subOpt.length)     console.log('[ARPGDEX] SubOption 컬럼:', Object.keys(subOpt[0]));
+      if (speciesData.length) console.log('[ARPGDEX] SpeciesData 컬럼:', Object.keys(speciesData[0]));
+      if (statusData.length)  console.log('[ARPGDEX] StatusData 컬럼:', Object.keys(statusData[0]));
+    }
 
-      // 스트링으로 UI 라벨 적용
-      applyStrings();
+    /* ---- 옵션 맵에서 라벨 반환 (없으면 value 그대로) ---- */
+    function optLabel(map, val) {
+      return map[val] || map[val?.toLowerCase()] || val || '';
+    }
 
-      // 초기화
-      state.filtered = [...ML_DATA];
-      const profileId = ARPGDEX.getParam('profile');
-      if (profileId) showProfile(profileId);
-      else renderGrid();
+    /* ---- 필터/폴더 탭 동적 생성 ---- */
+    function buildFilterUI() {
+      // 종족 폴더 탭
+      const speciesTabs = document.getElementById('species-tabs');
+      speciesTabs.innerHTML = `<button class="cat-tab active" data-folder="all">전체</button>`;
+      for (const [val, label] of Object.entries(OPT.species)) {
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab';
+        btn.dataset.folder = val;
+        btn.textContent = label;
+        speciesTabs.appendChild(btn);
+      }
+      // 이벤트 재등록
+      speciesTabs.querySelectorAll('[data-folder]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          speciesTabs.querySelectorAll('[data-folder]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.folder = btn.dataset.folder;
+          filterData(); renderGrid();
+        });
+      });
+
+      // Design Type 셀렉트
+      const dtSel = document.getElementById('filter-designtype');
+      dtSel.innerHTML = `<option value="all">${ARPGDEX.S(10) || 'Design Type'}: 전체</option>`;
+      for (const [val, label] of Object.entries(OPT.designtype)) {
+        dtSel.innerHTML += `<option value="${val}">${label}</option>`;
+      }
+
+      // Rarity 셀렉트 — StringId 9 + 35~39
+      const raritySel = document.getElementById('filter-rarity');
+      const rarityOpts = [
+        { val:'Common',    sid:35 }, { val:'Uncommon', sid:36 },
+        { val:'Rare',      sid:37 }, { val:'Very Rare', sid:38 },
+        { val:'Legendary', sid:39 },
+      ];
+      raritySel.innerHTML = `<option value="all">${ARPGDEX.S(9) || 'Rarity'}: 전체</option>`;
+      for (const { val, sid } of rarityOpts) {
+        raritySel.innerHTML += `<option value="${val}">${ARPGDEX.S(sid) || val}</option>`;
+      }
+
+      // Adopt Status 셀렉트
+      const statusSel = document.getElementById('filter-status');
+      statusSel.innerHTML = `<option value="all">${ARPGDEX.S(24) || 'Adopt Status'}: 전체</option>`;
+      for (const [val, label] of Object.entries(OPT.status)) {
+        statusSel.innerHTML += `<option value="${val}">${label}</option>`;
+      }
     }
 
     /* ---- 스트링 라벨 적용 ---- */
@@ -383,11 +452,45 @@
         const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
         if (btn && S(id)) btn.textContent = S(id);
       }
-      // 섹션 제목들 (data-sid 속성 기반)
+      // data-sid 속성 기반 섹션 제목
       document.querySelectorAll('[data-sid]').forEach(el => {
         const txt = S(Number(el.dataset.sid));
         if (txt) el.textContent = txt;
       });
+    }
+
+    async function loadData() {
+      // 스트링 먼저 로드 (옵션 라벨 변환에 필요)
+      await ARPGDEX.loadStrings();
+
+      // 마스터리스트 + 옵션 탭 병렬 로드
+      const [rawML] = await Promise.all([
+        ARPGDEX.importSheet('MasterList'),
+        loadOptions(),
+      ]);
+
+      // 디버그 로그 (연동 확인 후 제거 가능)
+      if (rawML.length > 0) {
+        console.log('[ARPGDEX] MasterList 컬럼명:', Object.keys(rawML[0]));
+        console.log('[ARPGDEX] 첫 번째 행:', rawML[0]);
+      } else {
+        console.warn('[ARPGDEX] MasterList 데이터 없음');
+      }
+
+      // ID 내림차순 정렬
+      ML_DATA = rawML
+        .map(normalizeChar)
+        .filter(c => c.id && Number(c.id) !== 0 && c.design)
+        .sort((a, b) => Number(b.id) - Number(a.id));
+
+      // UI 적용
+      applyStrings();
+      buildFilterUI();
+
+      state.filtered = [...ML_DATA];
+      const profileId = ARPGDEX.getParam('profile');
+      if (profileId) showProfile(profileId);
+      else renderGrid();
     }
 
     /* ============================================================
@@ -425,9 +528,9 @@
                 onerror="this.style.opacity='.3'">
             </div>
             <div class="gallery-card-info">
-              <div class="gallery-card-title">${d.design}</div>
+              <div class="gallery-card-title">${d.design}${d.charaname ? ' · ' + d.charaname : ''}</div>
               <div class="gallery-card-sub">
-                ${ARPGDEX.rarityBadge(d.rarity)}
+                ${ARPGDEX.rarityBadge(optLabel(OPT.species, d.rarity) ? d.rarity : d.rarity)}
                 &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${d.owner}
               </div>
             </div>
@@ -461,12 +564,12 @@
       ownerEl.href = char.ownerlink || '#';
 
       // Design Info
-      document.getElementById('info-species').textContent    = char.species;
+      document.getElementById('info-species').textContent    = optLabel(OPT.species, char.species);
       document.getElementById('info-rarity').innerHTML       = ARPGDEX.rarityBadge(char.rarity);
-      document.getElementById('info-designtype').textContent = char.designtype;
+      document.getElementById('info-designtype').textContent = optLabel(OPT.designtype, char.designtype);
 
       // Sub Info
-      document.getElementById('info-subtype').textContent = char.subtype  || '-';
+      document.getElementById('info-subtype').textContent = optLabel(OPT.subtype, char.subtype)  || '-';
       document.getElementById('info-faction').textContent  = char.faction || '-';
       document.getElementById('info-growth').textContent   = char.growth  || '-';
 
@@ -487,7 +590,7 @@
       document.getElementById('info-designer').textContent = char.designer  || '-';
       document.getElementById('info-designer').href        = char.designerlink;
       document.getElementById('info-value').textContent    = char.value ? `$${char.value}` : '-';
-      document.getElementById('info-status').textContent   = char.status || '-';
+      document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
       document.getElementById('info-notes').textContent    = char.notes  || '-';
 
       // Profile doc (iframe)
