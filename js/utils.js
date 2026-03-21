@@ -161,11 +161,12 @@ ARPGDEX.formatValue = (raw) => {
   const num = Number(String(raw).replace(/,/g, ''));
   if (!raw || isNaN(num)) return '-';
   const unit  = ARPGDEX.currencyUnit;
-  const full  = num.toLocaleString('ko-KR');           // 30,000
-  const short = parseFloat((num / 10000).toPrecision(10)); // 3.0 (불필요 trailing zero 제거)
-  // toPrecision 대신 직접 계산으로 깔끔하게
-  const shortStr = (num / 10000).toString().replace(/\.?0+$/, '') || '0';
-  return `${shortStr} (${full} ${unit})`;
+  const full  = num.toLocaleString('ko-KR');
+  const divided = num / 10000;
+  const shortStr = Number.isInteger(divided)
+    ? divided.toFixed(1)
+    : divided.toString();
+  return `<span style="font-size:1.3rem;font-weight:700;color:var(--text-primary);">${shortStr}</span><br><span style="font-size:.82rem;font-weight:400;color:var(--text-muted);">(${full}${unit})</span>`;
 };
 
 export { ARPGDEX };

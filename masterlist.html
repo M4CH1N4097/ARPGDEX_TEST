@@ -199,7 +199,7 @@
                 <!-- Value -->
                 <div>
                   <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;" data-sid="23">Value</div>
-                  <div id="info-value" style="font-size:1.3rem;font-weight:700;color:var(--text-primary);font-family:var(--font-heading);"></div>
+                  <div id="info-value" style="font-size:1.3rem;font-weight:700;color:var(--text-primary);font-family:var(--font-heading);white-space:pre-line;line-height:1.4;"></div>
                 </div>
 
                 <!-- Adopt Status -->
@@ -736,7 +736,7 @@
       document.getElementById('info-artist').href        = char.artistlink;
       document.getElementById('info-designer').innerHTML = userNameHTML(char.designer);
       document.getElementById('info-designer').href      = char.designerlink;
-      document.getElementById('info-value').textContent = ARPGDEX.formatValue(char.value);
+      document.getElementById('info-value').innerHTML = ARPGDEX.formatValue(char.value);
       document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
       document.getElementById('info-notes').textContent    = char.notes  || '-';
 
