@@ -348,16 +348,20 @@
        결과: { value: 'dog', label: '강아지' } 형태의 배열
     ============================================================= */
     // 각 탭별 옵션 맵: { [value]: label }
-    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {} };
+    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {} };
+    // levelData 구조: { [group]: [xp_lv1, xp_lv2, ...] } — 각 레벨에 필요한 누적 XP
 
     async function loadOptions() {
       try {
-        const [subOpt, speciesData, subTypeData, statusData] = await Promise.all([
+        const [subOpt, speciesData, subTypeData, statusData, levelData] = await Promise.all([
           ARPGDEX.importSheet('SubOption'),
           ARPGDEX.importSheet('SpeciesData'),
           ARPGDEX.importSheet('SubTypeData'),
           ARPGDEX.importSheet('StatusData'),
+          ARPGDEX.importSheet('LevelData'),
         ]);
+
+        if (levelData.length > 0) console.log('[ARPGDEX] LevelData 첫행:', JSON.stringify(levelData[0]), '두번째행:', JSON.stringify(levelData[1]));
 
         // SubOption → DesignType / AdoptStatus / Rarity (색상 포함)
         for (const row of subOpt) {
@@ -407,9 +411,10 @@
           const icon     = driveImgUrl(row['image'] || '');
           const maxLevel = Number(row['maxlevel'] || 5);
           OPT.stats[key] = {
-            name:     sid ? (ARPGDEX.S(sid) || statName) : statName,
-            icon,           // 이미지 URL (빈 경우 기본 아이콘 사용)
+            name:       sid ? (ARPGDEX.S(sid) || statName) : statName,
+            icon,
             maxLevel,
+            levelGroup: row['levelgroup'] || row['level_group'] || 'default',
           };
           statIndex++;
         }
@@ -710,7 +715,7 @@
                 <div class="stat-bar-fill" data-pct="${pct}"
                   style="height:100%;border-radius:100px;background:${level > 0 ? fillColor : 'transparent'};width:0%;transition:width .5s ease;"></div>
               </div>
-              ${xp > 0 ? `<div style="font-size:.7rem;color:var(--text-muted);text-align:right;margin-top:.15rem;margin-right:.25rem;">${xp.toLocaleString()} XP</div>` : ''}
+              <div style="font-size:.7rem;color:var(--text-muted);text-align:right;margin-top:.15rem;margin-right:.25rem;">${xp.toLocaleString()} XP</div>
             </div>`;
         }).join('');
 
