@@ -163,27 +163,12 @@
           <!-- STATUS Tab -->
           <div class="tab-pane" id="tab-status">
 
-            <!-- XP Progress -->
-            <div class="card" style="padding:1.25rem;margin-bottom:1rem;">
-              <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.85rem;">
-                Experience
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.4rem;">
-                <span style="font-size:.8rem;color:var(--text-muted);">현재 경험치</span>
-                <span id="status-xp-label" style="font-size:.85rem;font-weight:700;color:var(--text-primary);"></span>
-              </div>
-              <div style="background:var(--bg-faded);border-radius:100px;height:8px;overflow:hidden;border:1px solid var(--border);">
-                <div id="status-xp-bar" style="height:100%;border-radius:100px;background:var(--primary);transition:width .6s ease;width:0%;"></div>
-              </div>
-              <div id="status-xp-next" style="font-size:.75rem;color:var(--text-muted);margin-top:.4rem;text-align:right;"></div>
-            </div>
-
             <!-- Stats Grid -->
             <div class="card" style="padding:1.25rem;">
               <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.85rem;">
                 Stats
               </div>
-              <div id="status-stats" style="display:flex;flex-direction:column;gap:.75rem;"></div>
+              <div id="status-stats" style="display:flex;flex-direction:column;gap:.85rem;"></div>
             </div>
 
           </div>
@@ -434,16 +419,18 @@
 
       // Status tab
       const MAX_LEVEL = 5;
-      const STAT_XP_TABLE = [0, 100, 250, 500, 1000]; // xp required per level (cumulative)
-      const xp = char.xp ?? 0;
-      const xpNext = char.xpNext ?? 500;
-      const xpPct = xpNext > 0 ? Math.min(100, Math.round((xp / xpNext) * 100)) : 100;
-      document.getElementById('status-xp-label').textContent = `${xp.toLocaleString()} XP`;
-      document.getElementById('status-xp-next').textContent = `다음 레벨까지 ${(xpNext - xp).toLocaleString()} XP`;
-      setTimeout(() => {
-        document.getElementById('status-xp-bar').style.width = `${xpPct}%`;
-      }, 80);
-
+      const STAT_DEFS = {
+        A: { name: '체력',   icon: 'fas fa-heart' },
+        B: { name: '공격',   icon: 'fas fa-sword' },
+        C: { name: '방어',   icon: 'fas fa-shield-halved' },
+        D: { name: '속도',   icon: 'fas fa-bolt' },
+        E: { name: '마력',   icon: 'fas fa-wand-sparkles' },
+        F: { name: '지능',   icon: 'fas fa-brain' },
+        G: { name: '행운',   icon: 'fas fa-clover' },
+        H: { name: '카리스마', icon: 'fas fa-star' },
+        I: { name: '스텔스', icon: 'fas fa-eye-slash' },
+        J: { name: '인내',   icon: 'fas fa-mountain' },
+      };
       const statColors = {
         1: 'rgba(200,169,110,0.25)', 2: 'rgba(200,169,110,0.4)',
         3: 'rgba(200,169,110,0.6)',  4: 'rgba(200,169,110,0.8)',
@@ -451,21 +438,23 @@
       };
       const stats = char.stats ?? {};
       document.getElementById('status-stats').innerHTML = Object.entries(stats).map(([key, val]) => {
+        const def = STAT_DEFS[key] ?? { name: key, icon: 'fas fa-circle' };
         const pct = Math.round((val / MAX_LEVEL) * 100);
         const dots = Array.from({length: MAX_LEVEL}, (_, i) =>
-          `<div style="width:14px;height:14px;border-radius:50%;flex-shrink:0;
+          `<div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;
             background:${i < val ? 'var(--primary)' : 'var(--bg-raised)'};
             border:1px solid ${i < val ? 'var(--primary)' : 'var(--border)'};
             transition:background .3s ${i * 0.05}s;"></div>`
         ).join('');
         return `
           <div>
-            <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.3rem;">
-              <span style="font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;width:16px;flex-shrink:0;">${key}</span>
+            <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem;">
+              <i class="${def.icon}" style="font-size:.8rem;color:var(--primary);width:16px;text-align:center;flex-shrink:0;"></i>
+              <span style="font-size:.82rem;font-weight:600;color:var(--text-secondary);min-width:54px;flex-shrink:0;">${def.name}</span>
               <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
-              <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:24px;text-align:right;">${val}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${MAX_LEVEL}</span></span>
+              <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:28px;text-align:right;">${val}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${MAX_LEVEL}</span></span>
             </div>
-            <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:22px;">
+            <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:82px;">
               <div class="stat-bar-fill" data-pct="${pct}"
                 style="height:100%;border-radius:100px;background:${statColors[val] ?? 'var(--primary)'};width:0%;transition:width .5s ease;"></div>
             </div>
