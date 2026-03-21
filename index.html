@@ -81,7 +81,7 @@
           <h3><a href="gallery.html">Recent Gallery</a></h3>
           <a href="gallery.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
         </div>
-        <div id="recent-gallery" style="display:grid;grid-template-columns:1fr;gap:.85rem;"></div>
+        <div id="recent-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;"></div>
       </div>
 
     </div>
@@ -144,14 +144,11 @@
       // Gallery
       const galleryGrid = document.getElementById('recent-gallery');
       galleryGrid.innerHTML = mockGallery.map(g => `
-        <a class="post-card" href="gallery.html?post=${encodeURIComponent(g.id)}">
-          <div class="post-card-thumb">
-            <img src="${g.thumb}" alt="${g.title}" loading="lazy">
-            <div class="post-card-cat"><span class="badge badge-category">${g.category}</span></div>
-          </div>
-          <div class="post-card-body">
-            <div class="post-card-title">${g.title}</div>
-            <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${g.author}</div>
+        <a class="gallery-card" href="gallery.html?post=${encodeURIComponent(g.id)}">
+          <div class="gallery-card-img"><img src="${g.thumb}" alt="${g.title}" loading="lazy"></div>
+          <div class="gallery-card-info">
+            <div class="gallery-card-title">${g.title}</div>
+            <div class="gallery-card-sub"><i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${g.author}</div>
           </div>
         </a>`).join('');
 
