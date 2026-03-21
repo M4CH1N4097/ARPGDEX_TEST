@@ -35,10 +35,7 @@
 
         <!-- Right: Description + Button -->
         <div style="padding:1.5rem 2.5rem 2rem 1rem;display:flex;flex-direction:column;justify-content:center;gap:1.25rem;order:2;">
-          <p style="font-size:.95rem;color:var(--text-secondary);line-height:1.9;margin:0;">
-            여기에 종족 소개 글을 작성해 주세요.<br>
-            세계관, 종족의 특징, 커뮤니티 분위기 등을 자유롭게 담아보세요.
-          </p>
+          <div id="hero-desc" style="font-size:.95rem;color:var(--text-secondary);line-height:1.9;"></div>
           <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
             <a href="#" class="btn btn-primary"><i class="fab fa-discord"></i> 디스코드</a>
           </div>
@@ -73,15 +70,6 @@
 
     </div>
 
-    <!-- Staff -->
-    <div class="section-card fade-in" style="animation-delay:.25s">
-      <div class="section-card-header">
-        <h3><a href="staff.html">Staff</a></h3>
-        <a href="staff.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
-      </div>
-      <div id="recent-staff" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;"></div>
-    </div>
-
   </div>
 
   <div data-include="includes/footer.html"></div>
@@ -105,13 +93,15 @@
       { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', thumb: 'https://picsum.photos/seed/g3/400/225' },
     ];
 
-    const mockStaff = [
-      { username: 'AdminA', jobtitle: 'Owner', image: 'https://picsum.photos/seed/s1/200/200' },
-      { username: 'ModB',   jobtitle: 'Moderator', image: 'https://picsum.photos/seed/s2/200/200' },
-      { username: 'ArtistC', jobtitle: 'Guest Artist', image: 'https://picsum.photos/seed/s3/200/200' },
-    ];
+    const mockStaff = [];
 
     document.addEventListener('DOMContentLoaded', () => {
+
+      // Hero description — load from main.html
+      fetch('main.html')
+        .then(r => r.text())
+        .then(html => { document.getElementById('hero-desc').innerHTML = html; })
+        .catch(() => { document.getElementById('hero-desc').textContent = '소개 글을 불러오지 못했습니다.'; });
 
       // Quick Links — from nav-config
       document.getElementById('quick-links').innerHTML = NAV_ITEMS.map(group => `
@@ -148,19 +138,6 @@
           </div>
         </a>`).join('');
 
-      // Staff
-      const staffEl = document.getElementById('recent-staff');
-      staffEl.innerHTML = mockStaff.map(s => `
-        <div class="card" style="padding:1rem;">
-          <div style="display:flex;align-items:center;gap:.85rem;">
-            <img src="${s.image}" alt="${s.username}"
-              style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border-strong);flex-shrink:0;">
-            <div>
-              <div style="font-family:var(--font-heading);font-size:.9rem;font-weight:600;">${s.username}</div>
-              <div style="font-size:.75rem;color:var(--primary);font-weight:600;letter-spacing:.04em;margin-top:.1rem;">${s.jobtitle}</div>
-            </div>
-          </div>
-        </div>`).join('');
     });
   </script>
 
