@@ -348,8 +348,8 @@
        결과: { value: 'dog', label: '강아지' } 형태의 배열
     ============================================================= */
     // 각 탭별 옵션 맵: { [value]: label }
-    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {} };
-    // levelData 구조: { [group]: [xp_lv1, xp_lv2, ...] } — 각 레벨에 필요한 누적 XP
+    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {}, users: {} };
+    // users: { [discordUserId]: username }
 
     async function loadOptions() {
       try {
@@ -490,7 +490,15 @@
       }
     }
 
-    /* ---- 등급 뱃지 (시트 색상 우선, fallback CSS) ---- */
+
+    /* ---- 유저 ID → 이름 변환 ---- */
+    function userName(discordId) {
+      if (!discordId) return '-';
+      const found = OPT.users[String(discordId).trim()];
+      if (found) return found;
+      return `${discordId} (외부 인원)`;
+    }
+
     /* ---- XP 헬퍼 ---- */
     function getXpInLevel(totalXp, level, levelGroup) {
       const table = OPT.levelData[String(levelGroup)] || OPT.levelData['1'] || {};
@@ -533,11 +541,19 @@
       // 1. 스트링 먼저 (옵션 한국어 변환에 필요)
       await ARPGDEX.loadStrings();
 
-      // 2. MasterList + 옵션 병렬 로드 (옵션 실패해도 MasterList는 표시)
-      const [rawML] = await Promise.all([
+      // 2. MasterList + 옵션 + 유저목록 병렬 로드
+      const [rawML, rawUsers] = await Promise.all([
         ARPGDEX.importSheet('MasterList'),
-        loadOptions(),   // 내부에서 try-catch 처리
+        ARPGDEX.importSheet('UserInventory'),
+        loadOptions(),
       ]);
+
+      // 유저 맵: { discordUserId → username }
+      for (const row of (rawUsers || [])) {
+        const uid  = String(row['discorduserid'] || '').trim();
+        const name = String(row['username']      || '').trim();
+        if (uid && name) OPT.users[uid] = name;
+      }
 
       // ID 내림차순 정렬
       ML_DATA = rawML
@@ -593,7 +609,7 @@
               <div class="gallery-card-title">${d.design}${d.charaname ? ' · ' + d.charaname : ''}</div>
               <div class="gallery-card-sub">
                 ${rarityBadge(d.rarity)}
-                &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${d.owner}
+                &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${userName(d.owner)}
               </div>
             </div>
           </div>`).join('');
@@ -617,12 +633,13 @@
       document.getElementById('profile-view').classList.remove('hidden');
 
       // Header
-      document.getElementById('profile-name').textContent = char.design;
+      const displayName = char.design + (char.charaname ? `: ${char.charaname}` : '');
+      document.getElementById('profile-name').textContent = displayName;
       document.getElementById('profile-id').textContent = `#${char.id}`;
       document.getElementById('profile-rarity-badge').innerHTML = rarityBadge(char.rarity);
       document.getElementById('profile-img').src = char.image;
       const ownerEl = document.getElementById('profile-owner-link');
-      ownerEl.textContent = char.owner;
+      ownerEl.textContent = userName(char.owner);
       ownerEl.href = char.ownerlink || '#';
 
       // Design Info
@@ -647,9 +664,9 @@
       document.getElementById('info-avail-paid').innerHTML   = mark(char.availPaid);
 
       // Credits / Value / Status / Notes
-      document.getElementById('info-artist').textContent   = char.artist   || '-';
+      document.getElementById('info-artist').textContent   = userName(char.artist);
       document.getElementById('info-artist').href          = char.artistlink;
-      document.getElementById('info-designer').textContent = char.designer  || '-';
+      document.getElementById('info-designer').textContent = userName(char.designer);
       document.getElementById('info-designer').href        = char.designerlink;
       document.getElementById('info-value').textContent    = char.value ? `$${char.value}` : '-';
       document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
@@ -722,8 +739,7 @@
           // 레벨 표기: Lv. a / b (MAX)
           const levelHtml = `
             <span style="font-size:.82rem;font-weight:700;color:var(--primary);">Lv. ${level}</span>
-            <span style="font-size:.72rem;color:var(--text-muted);"> / <span style="font-size:.7rem;">${maxLevel}</span></span>
-            ${isMax ? `<span style="font-size:.68rem;color:var(--primary);font-weight:700;letter-spacing:.04em;"> (MAX)</span>` : ''}`;
+            <span style="font-size:.72rem;color:var(--text-muted);"> / <span style="font-size:.7rem;">${maxLevel}</span></span>`;
 
           // XP 표기: c / d
           const xpHtml = isMax
