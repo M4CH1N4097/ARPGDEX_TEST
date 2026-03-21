@@ -705,19 +705,17 @@
         for (const tt of OPT.traitTypes) {
           const group = grouped[tt.value] || [];
           if (!group.length) continue;
-          html += `<div style="margin-bottom:.3rem;">
-            <div style="font-size:.7rem;font-weight:700;color:var(--text-muted);letter-spacing:.05em;margin-bottom:.1rem;">▾ ${tt.label}</div>`;
+          html += `<div style="margin-bottom:.6rem;"><div style="font-size:.82rem;font-weight:700;color:var(--text-secondary);margin-bottom:.15rem;">▼ ${tt.label}</div>`;
           for (const trait of group) {
-            const rarVal    = trait['rarity']    || '';
-            const rarColor  = OPT.rarityColor[rarVal] || 'var(--primary)';
-            const rarLabel  = OPT.rarity[rarVal] || rarVal;
+            const rarVal   = trait['rarity'] || '';
+            const rarColor = OPT.rarityColor[rarVal] || 'var(--primary)';
+            const rarLabel = OPT.rarity[rarVal] || rarVal;
             const traitName = ARPGDEX.S(Number(trait['traitname'])) || trait['traitname'] || `#${trait['id']}`;
-            html += `<div style="font-size:.82rem;padding:.05rem 0 .05rem .5rem;">
-              <span style="font-weight:700;color:${rarColor};">[${rarLabel}]</span>
-              <span style="color:var(--text-secondary);"> ${traitName}</span>
-            </div>`;
+            html += `<div style="font-size:.82rem;color:var(--text-secondary);"><span style="font-weight:700;color:${rarColor};">[${rarLabel}]</span> ${traitName}</div>`;
           }
           html += `</div>`;
+        }
+        traitsEl.innerHTML = html || (char.traits || '-');
         }
         traitsEl.innerHTML = html || (char.traits || '-');
       }
