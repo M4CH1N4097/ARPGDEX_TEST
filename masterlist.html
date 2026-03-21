@@ -104,6 +104,7 @@
         <!-- Tabs -->
         <div class="tab-nav" id="profile-tab-nav">
           <button class="tab-btn active" data-tab="info">Info</button>
+          <button class="tab-btn" data-tab="status">Status</button>
           <button class="tab-btn" data-tab="profile">Profile</button>
           <button class="tab-btn" data-tab="gallery">Gallery</button>
           <button class="tab-btn" data-tab="logs">Logs</button>
@@ -157,6 +158,34 @@
             <div style="margin-top:1rem;padding:.6rem 1rem;background:var(--bg-faded);border-radius:var(--radius);font-size:.8rem;text-align:center;color:var(--text-muted);">
               정보 수정이 필요하신 경우 <a href="#">이 곳</a>에서 신청해 주세요.
             </div>
+          </div>
+
+          <!-- STATUS Tab -->
+          <div class="tab-pane" id="tab-status">
+
+            <!-- XP Progress -->
+            <div class="card" style="padding:1.25rem;margin-bottom:1rem;">
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.85rem;">
+                Experience
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.4rem;">
+                <span style="font-size:.8rem;color:var(--text-muted);">현재 경험치</span>
+                <span id="status-xp-label" style="font-size:.85rem;font-weight:700;color:var(--text-primary);"></span>
+              </div>
+              <div style="background:var(--bg-faded);border-radius:100px;height:8px;overflow:hidden;border:1px solid var(--border);">
+                <div id="status-xp-bar" style="height:100%;border-radius:100px;background:var(--primary);transition:width .6s ease;width:0%;"></div>
+              </div>
+              <div id="status-xp-next" style="font-size:.75rem;color:var(--text-muted);margin-top:.4rem;text-align:right;"></div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="card" style="padding:1.25rem;">
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.85rem;">
+                Stats
+              </div>
+              <div id="status-stats" style="display:flex;flex-direction:column;gap:.75rem;"></div>
+            </div>
+
           </div>
 
           <!-- PROFILE Tab -->
@@ -224,6 +253,8 @@
         value: '30', status: 'Resell', notes: '기본 캐릭터입니다.',
         image: 'https://picsum.photos/seed/c1/400/400',
         profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
+        xp: 320, xpNext: 500,
+        stats: { A:3, B:2, C:4, D:1, E:3, F:2, G:5, H:1, I:3, J:2 },
       },
       {
         design: 'CHA-002', id: '002', species: 'Cat', rarity: 'Rare', designtype: 'MYO Design',
@@ -232,6 +263,8 @@
         value: '80', status: 'Trade', notes: '마법을 사용하는 특수 캐릭터.',
         image: 'https://picsum.photos/seed/c2/400/400',
         profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
+        xp: 80, xpNext: 500,
+        stats: { A:5, B:4, C:3, D:5, E:2, F:4, G:3, H:5, I:2, J:4 },
       },
       {
         design: 'CHA-003', id: '003', species: 'Bunny', rarity: 'Uncommon', designtype: 'Guest Design',
@@ -240,6 +273,8 @@
         value: '50', status: 'Gift', notes: '',
         image: 'https://picsum.photos/seed/c3/400/400',
         profiledoc: '',
+        xp: 0, xpNext: 500,
+        stats: { A:1, B:2, C:1, D:2, E:1, F:3, G:1, H:2, I:1, J:1 },
       },
       {
         design: 'CHA-004', id: '004', species: 'Dog', rarity: 'Legendary', designtype: 'Official Design',
@@ -248,6 +283,8 @@
         value: '300', status: 'Resell', notes: '전설급 디자인.',
         image: 'https://picsum.photos/seed/c4/400/400',
         profiledoc: '',
+        xp: 450, xpNext: 500,
+        stats: { A:5, B:5, C:5, D:4, E:5, F:5, G:4, H:5, I:5, J:5 },
       },
       {
         design: 'CHA-005', id: '005', species: 'Cat', rarity: 'Very Rare', designtype: 'MYO Design',
@@ -256,6 +293,8 @@
         value: '150', status: 'Trade', notes: '',
         image: 'https://picsum.photos/seed/c5/400/400',
         profiledoc: '',
+        xp: 200, xpNext: 500,
+        stats: { A:2, B:3, C:4, D:3, E:5, F:2, G:3, H:4, I:3, J:2 },
       },
     ];
 
@@ -392,6 +431,53 @@
             </div>
           </a>`).join('');
       }
+
+      // Status tab
+      const MAX_LEVEL = 5;
+      const STAT_XP_TABLE = [0, 100, 250, 500, 1000]; // xp required per level (cumulative)
+      const xp = char.xp ?? 0;
+      const xpNext = char.xpNext ?? 500;
+      const xpPct = xpNext > 0 ? Math.min(100, Math.round((xp / xpNext) * 100)) : 100;
+      document.getElementById('status-xp-label').textContent = `${xp.toLocaleString()} XP`;
+      document.getElementById('status-xp-next').textContent = `다음 레벨까지 ${(xpNext - xp).toLocaleString()} XP`;
+      setTimeout(() => {
+        document.getElementById('status-xp-bar').style.width = `${xpPct}%`;
+      }, 80);
+
+      const statColors = {
+        1: 'rgba(200,169,110,0.25)', 2: 'rgba(200,169,110,0.4)',
+        3: 'rgba(200,169,110,0.6)',  4: 'rgba(200,169,110,0.8)',
+        5: 'var(--primary)'
+      };
+      const stats = char.stats ?? {};
+      document.getElementById('status-stats').innerHTML = Object.entries(stats).map(([key, val]) => {
+        const pct = Math.round((val / MAX_LEVEL) * 100);
+        const dots = Array.from({length: MAX_LEVEL}, (_, i) =>
+          `<div style="width:14px;height:14px;border-radius:50%;flex-shrink:0;
+            background:${i < val ? 'var(--primary)' : 'var(--bg-raised)'};
+            border:1px solid ${i < val ? 'var(--primary)' : 'var(--border)'};
+            transition:background .3s ${i * 0.05}s;"></div>`
+        ).join('');
+        return `
+          <div>
+            <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.3rem;">
+              <span style="font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;width:16px;flex-shrink:0;">${key}</span>
+              <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
+              <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:24px;text-align:right;">${val}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${MAX_LEVEL}</span></span>
+            </div>
+            <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:22px;">
+              <div class="stat-bar-fill" data-pct="${pct}"
+                style="height:100%;border-radius:100px;background:${statColors[val] ?? 'var(--primary)'};width:0%;transition:width .5s ease;"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Animate stat bars after render
+      setTimeout(() => {
+        document.querySelectorAll('.stat-bar-fill').forEach(el => {
+          el.style.width = el.dataset.pct + '%';
+        });
+      }, 80);
 
       // Logs
       const logs = LOG_DATA[designId] || [];
