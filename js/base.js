@@ -7,12 +7,13 @@ const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 
 /* ---- 전역 데이터 -------------------------------------------- */
 export const MENU_GROUPS = [];
-export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '' };
+export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLink: '' };
 
-/* ---- sessionStorage 헬퍼 ------------------------------------ */
+/* ---- sessionStorage 헬퍼 (버전 키로 캐시 자동 무효화) ------- */
+const CACHE_VER = 'v3';
 const cache = {
-  get: (key) => { try { const v = sessionStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; } },
-  set: (key, val) => { try { sessionStorage.setItem(key, JSON.stringify(val)); } catch(e) {} },
+  get: (key) => { try { const v = sessionStorage.getItem(CACHE_VER + key); return v ? JSON.parse(v) : null; } catch(e) { return null; } },
+  set: (key, val) => { try { sessionStorage.setItem(CACHE_VER + key, JSON.stringify(val)); } catch(e) {} },
 };
 
 /* ---- MenuSet 탭 로드 ---------------------------------------- */
@@ -85,14 +86,20 @@ export async function loadSiteConfig() {
     // 스트링이 아직 안 로드됐을 수 있으니 보장
     await ARPGDEX.loadStrings();
 
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F28:F36`;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F28:F38`;
     const text = await fetch(url).then(r => r.text());
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const rows = json?.table?.rows || [];
 
+    // F28 = rows[0] — 사이트명 StringId
     const nameSid = Number(rows[0]?.c?.[0]?.v || 0);
     if (nameSid) SITE_CONFIG.name = ARPGDEX.S(nameSid) || SITE_CONFIG.name;
 
+    // F32 = rows[4] — 디스코드 링크
+    const discordRaw = rows[4]?.c?.[0]?.v || rows[4]?.c?.[0]?.f || '';
+    if (discordRaw) SITE_CONFIG.discordLink = discordRaw;
+
+    // F36 = rows[8] — 히어로 이미지
     const imgRaw = rows[8]?.c?.[0]?.v || rows[8]?.c?.[0]?.f || '';
     if (imgRaw) {
       const m = imgRaw.match(/\/d\/([\w-]+)/);

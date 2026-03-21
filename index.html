@@ -38,7 +38,7 @@
         <div style="padding:1.5rem 2.5rem 2rem 1rem;display:flex;flex-direction:column;justify-content:center;gap:1.25rem;order:2;">
           <div id="hero-desc" style="font-size:.95rem;color:var(--text-secondary);line-height:1.9;"></div>
           <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-            <a href="#" class="btn btn-primary"><i class="fab fa-discord"></i> 디스코드</a>
+            <a id="discord-btn" href="#" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-discord"></i> 디스코드</a>
           </div>
         </div>
 
@@ -127,6 +127,10 @@
       if (SITE_CONFIG.sub) {
         const subEl = document.getElementById('site-sub');
         if (subEl) subEl.textContent = SITE_CONFIG.sub;
+      }
+      if (SITE_CONFIG.discordLink) {
+        const btn = document.getElementById('discord-btn');
+        if (btn) btn.href = SITE_CONFIG.discordLink;
       }
       if (SITE_CONFIG.heroImage) {
         const imgEl = document.getElementById('hero-image');
