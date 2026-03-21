@@ -350,58 +350,53 @@
     let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {} };
 
     async function loadOptions() {
-      const [subOpt, speciesData, subTypeData, statusData] = await Promise.all([
-        ARPGDEX.importSheet('SubOption'),
-        ARPGDEX.importSheet('SpeciesData'),
-        ARPGDEX.importSheet('SubTypeData'),
-        ARPGDEX.importSheet('StatusData'),
-      ]);
+      try {
+        const [subOpt, speciesData, subTypeData, statusData] = await Promise.all([
+          ARPGDEX.importSheet('SubOption'),
+          ARPGDEX.importSheet('SpeciesData'),
+          ARPGDEX.importSheet('SubTypeData'),
+          ARPGDEX.importSheet('StatusData'),
+        ]);
 
-      // SubOption → DesignType 옵션
-      // 컬럼: value(변수명), designtypesstringid(스트링ID)
-      for (const row of subOpt) {
-        const val = row['value'] || row['id'] || '';
-        const sid = Number(row['designtypesstringid'] || 0);
-        if (val && sid) OPT.designtype[val] = ARPGDEX.S(sid) || val;
+        // SubOption → DesignType / Rarity
+        for (const row of subOpt) {
+          const val = row['value'] || row['id'] || '';
+          if (!val) continue;
+          const dtSid  = Number(row['designtypesstringid']  || 0);
+          const rarSid = Number(row['raritystringid']       || 0);
+          if (dtSid)  OPT.designtype[val] = ARPGDEX.S(dtSid)  || val;
+          if (rarSid) OPT.rarity[val]     = ARPGDEX.S(rarSid) || val;
+        }
+
+        // StatusData → AdoptStatus
+        for (const row of statusData) {
+          const val = row['value'] || row['id'] || '';
+          const sid = Number(row['adoptstatuestringid'] || 0);
+          if (val && sid) OPT.status[val] = ARPGDEX.S(sid) || val;
+        }
+
+        // SpeciesData → Species
+        for (const row of speciesData) {
+          const val = row['value'] || row['id'] || '';
+          const sid = Number(row['speciesnamestringid'] || 0);
+          if (val && sid) OPT.species[val] = ARPGDEX.S(sid) || val;
+        }
+
+        // SubTypeData → SubType / Faction / Stage
+        for (const row of subTypeData) {
+          const val        = row['value'] || row['id'] || '';
+          const subSid     = Number(row['subtypestringid']  || 0);
+          const factionSid = Number(row['factionstringid']  || 0);
+          const stageSid   = Number(row['stagestringid']    || 0);
+          if (val && subSid)     OPT.subtype[val] = ARPGDEX.S(subSid)     || val;
+          if (val && factionSid) OPT.faction[val] = ARPGDEX.S(factionSid) || val;
+          if (val && stageSid)   OPT.growth[val]  = ARPGDEX.S(stageSid)   || val;
+        }
+
+        console.log('[ARPGDEX] 옵션 로드됨:', OPT);
+      } catch(e) {
+        console.warn('[ARPGDEX] 옵션 로드 실패 (필터는 raw 값으로 동작):', e);
       }
-
-      // SubOption → AdoptStatus 옵션
-      // 컬럼: value(변수명), adoptstatuestringid(스트링ID)
-      for (const row of subOpt) {
-        const val = row['value'] || row['id'] || '';
-        const sid = Number(row['adoptstatuestringid'] || 0);
-        if (val && sid) OPT.status[val] = ARPGDEX.S(sid) || val;
-      }
-
-      // SubOption → Rarity 옵션
-      // 컬럼: value(변수명), raritystringid(스트링ID)
-      for (const row of subOpt) {
-        const val = row['value'] || row['id'] || '';
-        const sid = Number(row['raritystringid'] || 0);
-        if (val && sid) OPT.rarity[val] = ARPGDEX.S(sid) || val;
-      }
-
-      // SpeciesData → Species 옵션
-      // 컬럼: value(변수명), speciesnamestringid(스트링ID)
-      for (const row of speciesData) {
-        const val = row['value'] || row['id'] || '';
-        const sid = Number(row['speciesnamestringid'] || 0);
-        if (val && sid) OPT.species[val] = ARPGDEX.S(sid) || val;
-      }
-
-      // SubTypeData → SubType / Faction / Stage 옵션
-      // 컬럼: value(변수명), subtypestringid / factionstringid / stagestringid
-      for (const row of subTypeData) {
-        const val = row['value'] || row['id'] || '';
-        const subSid     = Number(row['subtypestringid']  || 0);
-        const factionSid = Number(row['factionstringid']  || 0);
-        const stageSid   = Number(row['stagestringid']    || 0);
-        if (val && subSid)     OPT.subtype[val]  = ARPGDEX.S(subSid)     || val;
-        if (val && factionSid) OPT.faction[val]  = ARPGDEX.S(factionSid) || val;
-        if (val && stageSid)   OPT.growth[val]   = ARPGDEX.S(stageSid)   || val;
-      }
-
-      console.log('[ARPGDEX] 옵션 로드됨:', OPT);
     }
 
     /* ---- 옵션 맵에서 라벨 반환 (없으면 value 그대로) ---- */
@@ -477,13 +472,13 @@
     }
 
     async function loadData() {
-      // 스트링 먼저 로드 (옵션 라벨 변환에 필요)
+      // 1. 스트링 먼저 (옵션 한국어 변환에 필요)
       await ARPGDEX.loadStrings();
 
-      // 마스터리스트 + 옵션 탭 병렬 로드
+      // 2. MasterList + 옵션 병렬 로드 (옵션 실패해도 MasterList는 표시)
       const [rawML] = await Promise.all([
         ARPGDEX.importSheet('MasterList'),
-        loadOptions(),
+        loadOptions(),   // 내부에서 try-catch 처리
       ]);
 
       // 디버그 로그 (연동 확인 후 제거 가능)
