@@ -552,15 +552,12 @@
       if (emptyP) emptyP.textContent = S(38) || '항목이 없습니다.';
 
       // ---- 콤보박스 빌더 ----
-      // wrapper div 안에 input + dropdown list 방식으로 구현
-      // 이미 HTML에 <select id="..."> 로 되어있으므로 동적으로 교체
-      const buildCombo = (containerId, labelId, labelText, items, onChange) => {
+      const buildCombo = (selId, labelId, labelText, items, onChange) => {
         const lbl = document.getElementById(labelId);
         if (lbl) lbl.textContent = labelText;
 
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        container.innerHTML = ''; // select 교체
+        const original = document.getElementById(selId);
+        if (!original) return;
 
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:relative;';
@@ -570,47 +567,50 @@
         input.className = 'form-control';
         input.placeholder = `— ${labelText}`;
         input.autocomplete = 'off';
-        input.style.cssText = 'width:100%;';
+        input.dataset.value = '';
 
         const dropdown = document.createElement('div');
         dropdown.style.cssText = `
           display:none;position:absolute;top:100%;left:0;right:0;z-index:500;
           background:var(--bg-raised);border:1px solid var(--border-strong);
-          border-radius:var(--radius);max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.4);
+          border-radius:var(--radius);max-height:200px;overflow-y:auto;
+          box-shadow:0 4px 16px rgba(0,0,0,.4);
         `;
 
         const renderDropdown = (filter) => {
           const q = filter.toLowerCase();
           const filtered = items.filter(([,label]) => !q || label.toLowerCase().includes(q));
-          dropdown.innerHTML = `<div style="padding:.35rem .7rem;font-size:.8rem;color:var(--text-muted);cursor:pointer;"
-            onmousedown="event.preventDefault()" onclick="this.closest('div').previousSibling.value='';this.parentNode.style.display='none';">
-            — ${labelText}
-          </div>`;
+          dropdown.innerHTML = '';
+          // 초기화 항목
+          const clearItem = document.createElement('div');
+          clearItem.style.cssText = 'padding:.35rem .7rem;font-size:.8rem;color:var(--text-muted);cursor:pointer;';
+          clearItem.textContent = `— ${labelText}`;
+          clearItem.onmousedown = e => e.preventDefault();
+          clearItem.onclick = () => { input.value = ''; input.dataset.value = ''; dropdown.style.display = 'none'; onChange(''); };
+          clearItem.onmouseover = () => clearItem.style.background = 'var(--bg-card)';
+          clearItem.onmouseout  = () => clearItem.style.background = '';
+          dropdown.appendChild(clearItem);
+
           for (const [val, label] of filtered) {
             const item = document.createElement('div');
             item.style.cssText = 'padding:.35rem .7rem;font-size:.82rem;color:var(--text-primary);cursor:pointer;';
             item.textContent = label;
-            item.onmousedown = (e) => e.preventDefault();
-            item.onclick = () => {
-              input.value = label;
-              input.dataset.value = val;
-              dropdown.style.display = 'none';
-              onChange(val);
-            };
+            item.onmousedown = e => e.preventDefault();
+            item.onclick = () => { input.value = label; input.dataset.value = val; dropdown.style.display = 'none'; onChange(val); };
             item.onmouseover = () => item.style.background = 'var(--bg-card)';
             item.onmouseout  = () => item.style.background = '';
             dropdown.appendChild(item);
           }
-          dropdown.style.display = filtered.length ? 'block' : 'none';
+          dropdown.style.display = 'block';
         };
 
         input.addEventListener('focus', () => renderDropdown(input.value));
         input.addEventListener('input', () => { input.dataset.value = ''; renderDropdown(input.value); onChange(''); });
-        input.addEventListener('blur',  () => { setTimeout(() => dropdown.style.display = 'none', 150); });
+        input.addEventListener('blur',  () => setTimeout(() => dropdown.style.display = 'none', 150));
 
         wrap.appendChild(input);
         wrap.appendChild(dropdown);
-        container.appendChild(wrap);
+        original.parentNode.replaceChild(wrap, original);
       };
 
       // 유저 콤보박스 (Owner, Artist, Designer)
