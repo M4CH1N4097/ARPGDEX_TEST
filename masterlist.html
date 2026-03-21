@@ -83,7 +83,7 @@
           <div>
             <h2 id="profile-name" style="font-size:1.5rem;"></h2>
             <div style="margin-top:.3rem;font-size:.82rem;color:var(--text-muted);">
-              <i class="fas fa-user fa-fw" style="margin-right:.3rem;font-size:.75rem;"></i><a id="profile-owner-link" href="#" style="color:var(--text-muted);"></a>
+              <a id="profile-owner-link" href="#" style="color:var(--text-muted);"></a>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
@@ -348,18 +348,22 @@
        결과: { value: 'dog', label: '강아지' } 형태의 배열
     ============================================================= */
     // 각 탭별 옵션 맵: { [value]: label }
-    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {}, users: {} };
-    // users: { [discordUserId]: username }
+    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {}, users: {}, traitTypes: [], traitMap: {} };
+    // traitTypes: [{id, value, label}] — SubOption의 TraitTypes 순서대로
+    // traitMap: { [traitId]: traitRow } — TraitList 전체
 
     async function loadOptions() {
       try {
-        const [subOpt, speciesData, subTypeData, statusData, levelData] = await Promise.all([
+        const [subOpt, speciesData, subTypeData, statusData, levelData, traitList] = await Promise.all([
           ARPGDEX.importSheet('SubOption'),
           ARPGDEX.importSheet('SpeciesData'),
           ARPGDEX.importSheet('SubTypeData'),
           ARPGDEX.importSheet('StatusData'),
           ARPGDEX.importSheet('LevelData'),
+          ARPGDEX.importSheet('TraitList'),
         ]);
+
+        if (traitList.length > 0) console.log('[ARPGDEX] TraitList 첫행:', JSON.stringify(traitList[0]));
 
         if (levelData.length > 0) {
           // levelData 구조: { levelgroup, nowlevel, nextlevel }
@@ -388,6 +392,19 @@
           if (rarVal && rarSid)          OPT.rarity[rarVal]     = ARPGDEX.S(rarSid) || rarVal;
           if (rarVal && row['raritycolor'])     OPT.rarityColor[rarVal] = row['raritycolor'];
           if (rarVal && row['raritybackcolor']) OPT.rarityBack[rarVal]  = row['raritybackcolor'];
+
+          // TraitTypes 순서 (SubOption의 id 순으로 push)
+          const ttVal = row['traittypes'];
+          const ttSid = Number(row['traittypesstringid'] || 0);
+          if (ttVal && ttSid) OPT.traitTypes.push({ id: Number(row['id']), value: ttVal, label: ARPGDEX.S(ttSid) || ttVal });
+        }
+        // id 순 정렬 (혹시 순서가 틀릴 경우 대비)
+        OPT.traitTypes.sort((a, b) => a.id - b.id);
+
+        // TraitList → traitMap { [id]: row }
+        for (const row of traitList) {
+          const id = String(row['id'] || '').trim();
+          if (id) OPT.traitMap[id] = row;
         }
 
         // SpeciesData → Species
@@ -492,20 +509,18 @@
 
 
     /* ---- 유저 ID → 이름 변환 ---- */
-    // isRegistered: UserInventory에 있으면 true
     function userName(discordId) {
       if (!discordId) return { text: '-', registered: false };
       const found = OPT.users[String(discordId).trim()];
       if (found) return { text: found, registered: true };
-      return { text: `${discordId} (외부 인원)`, registered: false };
+      return { text: discordId, registered: false };
     }
-    // 아이콘 포함 표시용 (리스트에 있으면 아이콘 O, 없으면 X)
-    function userNameHTML(discordId, iconClass = 'fas fa-user') {
+    function userNameHTML(discordId) {
       const { text, registered } = userName(discordId);
       if (!discordId || text === '-') return '-';
       return registered
-        ? `<i class="${iconClass}" style="font-size:.75rem;margin-right:.35rem;opacity:.7;"></i>${text}`
-        : text;
+        ? `<i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${text}`
+        : `<span style="color:var(--text-muted);">${text}</span>`;
     }
 
     /* ---- XP 헬퍼 ---- */
@@ -661,8 +676,60 @@
       document.getElementById('info-faction').textContent  = optLabel(OPT.faction, char.faction) || '-';
       document.getElementById('info-growth').textContent   = optLabel(OPT.growth,  char.growth)  || '-';
 
-      // Traits
-      document.getElementById('info-traits').textContent = char.traits || '-';
+      // Traits — TraitList 기반 그룹화 표기
+      const traitsEl = document.getElementById('info-traits');
+      const traitIds = (char.traits || '').split(',').map(s => s.trim()).filter(Boolean);
+
+      if (!traitIds.length || !Object.keys(OPT.traitMap).length) {
+        traitsEl.textContent = char.traits || '-';
+      } else {
+        // 각 id로 TraitList 조회
+        const resolved = traitIds
+          .map(id => OPT.traitMap[id])
+          .filter(Boolean);
+
+        // TraitType 컬럼명 자동 감지 (첫 행 기준)
+        const sampleTrait = resolved[0] || Object.values(OPT.traitMap)[0];
+        const typeCol  = sampleTrait ? (['traittype','traittypes','type','category'].find(k => sampleTrait[k] !== undefined) || 'traittype') : 'traittype';
+        const nameCol  = sampleTrait ? (['traitname','name','trait','traitnames'].find(k => sampleTrait[k] !== undefined) || 'traitname') : 'traitname';
+        const rarityCol = sampleTrait ? (['rarity','traitsrarity','traitrarity'].find(k => sampleTrait[k] !== undefined) || 'rarity') : 'rarity';
+        const idCol    = 'id';
+
+        // TraitTypes 순서대로 그룹화
+        const grouped = {};
+        for (const trait of resolved) {
+          const typeVal = String(trait[typeCol] || '').trim();
+          if (!grouped[typeVal]) grouped[typeVal] = [];
+          grouped[typeVal].push(trait);
+        }
+        // 각 그룹 내 ID 순 정렬
+        for (const key in grouped) {
+          grouped[key].sort((a, b) => Number(a[idCol]) - Number(b[idCol]));
+        }
+
+        // TraitTypes 순서대로 렌더링
+        let html = '';
+        for (const tt of OPT.traitTypes) {
+          const group = grouped[tt.value] || grouped[String(tt.id)] || [];
+          if (!group.length) continue;
+          html += `<div style="margin-bottom:.5rem;">
+            <div style="font-size:.72rem;font-weight:700;color:var(--text-muted);letter-spacing:.06em;margin-bottom:.25rem;">
+              ▾ ${tt.label}
+            </div>`;
+          for (const trait of group) {
+            const rarVal   = trait[rarityCol] || '';
+            const rarColor = OPT.rarityColor[rarVal] || 'var(--primary)';
+            const rarLabel = OPT.rarity[rarVal] || rarVal;
+            const traitName = trait[nameCol] || trait['traitname'] || trait['name'] || `#${trait[idCol]}`;
+            html += `<div style="font-size:.82rem;padding:.1rem 0;">
+              <span style="font-weight:700;color:${rarColor};">[${rarLabel}]</span>
+              <span style="color:var(--text-secondary);"> ${traitName}</span>
+            </div>`;
+          }
+          html += `</div>`;
+        }
+        traitsEl.innerHTML = html || char.traits || '-';
+      }
 
       // Availability
       const mark = (v) => v
@@ -673,9 +740,9 @@
       document.getElementById('info-avail-paid').innerHTML   = mark(char.availPaid);
 
       // Credits / Value / Status / Notes
-      document.getElementById('info-artist').innerHTML   = userNameHTML(char.artist,   'fas fa-pen-nib');
+      document.getElementById('info-artist').innerHTML   = userNameHTML(char.artist);
       document.getElementById('info-artist').href        = char.artistlink;
-      document.getElementById('info-designer').innerHTML = userNameHTML(char.designer, 'fas fa-pen-ruler');
+      document.getElementById('info-designer').innerHTML = userNameHTML(char.designer);
       document.getElementById('info-designer').href      = char.designerlink;
       document.getElementById('info-value').textContent    = char.value ? `$${char.value}` : '-';
       document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
