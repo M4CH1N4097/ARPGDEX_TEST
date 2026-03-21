@@ -10,7 +10,7 @@ export const MENU_GROUPS = [];
 export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLink: '' };
 
 /* ---- sessionStorage 헬퍼 (버전 키로 캐시 자동 무효화) ------- */
-const CACHE_VER = 'v3';
+const CACHE_VER = 'v4';
 const cache = {
   get: (key) => { try { const v = sessionStorage.getItem(CACHE_VER + key); return v ? JSON.parse(v) : null; } catch(e) { return null; } },
   set: (key, val) => { try { sessionStorage.setItem(CACHE_VER + key, JSON.stringify(val)); } catch(e) {} },
