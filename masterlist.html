@@ -131,7 +131,7 @@
 
                 <!-- Design Info -->
                 <div class="card" style="padding:1.25rem;">
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Design Info</div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;" data-sid="7">Design Info</div>
                   <table class="info-table">
                     <tr><td>Species</td><td id="info-species"></td></tr>
                     <tr><td>Rarity</td><td id="info-rarity"></td></tr>
@@ -141,7 +141,7 @@
 
                 <!-- Sub Info -->
                 <div class="card" style="padding:1.25rem;">
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Sub Info</div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;" data-sid="11">Sub Info</div>
                   <table class="info-table">
                     <tr><td>하위 유형</td><td id="info-subtype"></td></tr>
                     <tr><td>진영</td><td id="info-faction"></td></tr>
@@ -162,7 +162,7 @@
 
                 <!-- Availability -->
                 <div class="card" style="padding:1.25rem;">
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Availability</div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;" data-sid="16">Availability</div>
                   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;gap:.5rem;">
                     <div>
                       <div style="font-size:.7rem;color:var(--text-muted);font-weight:600;margin-bottom:.5rem;">무료분양</div>
@@ -189,7 +189,7 @@
 
                 <!-- Credits -->
                 <div>
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Credits</div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;" data-sid="20">Credits</div>
                   <table class="info-table" style="text-align:left;">
                     <tr><td>Artist</td><td><a id="info-artist" href="#"></a></td></tr>
                     <tr><td>Designer</td><td><a id="info-designer" href="#"></a></td></tr>
@@ -204,7 +204,7 @@
 
                 <!-- Adopt Status -->
                 <div>
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Adopt Status</div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;" data-sid="24">Adopt Status</div>
                   <div id="info-status" style="font-size:.9rem;font-weight:600;color:var(--text-secondary);"></div>
                 </div>
 
@@ -281,6 +281,386 @@
   <script src="js/base.js" type="module"></script>
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
+
+    /* ============================================================
+       INIT — 시트 데이터 + 스트링 로드
+    ============================================================= */
+    const PER_PAGE = 12;
+    let ML_DATA = [];      // 마스터리스트 전체
+    let GALLERY_DATA = []; // 갤러리 데이터 (tab 연동용, 추후 연동)
+    let state = { filtered:[], folder:'all', designtype:'all', rarity:'all', status:'all', search:'', page:1 };
+
+    /* ---- 시트 컬럼 → 내부 필드 정규화 ---- */
+    function normalizeChar(row) {
+      // 시트 컬럼명이 소문자+공백제거 형태로 들어옴
+      // 스탯: stata ~ statj 또는 stat_a ~ stat_j 또는 a ~ j
+      const stat = (k) => {
+        const candidates = [`stat${k.toLowerCase()}`, `stat_${k.toLowerCase()}`, k.toLowerCase()];
+        for (const c of candidates) if (row[c] !== undefined && row[c] !== '') return Number(row[c]) || 0;
+        return 0;
+      };
+      return {
+        id:         row['id']          ?? '',
+        design:     row['design']      ?? row['code']      ?? '',
+        species:    row['species']     ?? '',
+        rarity:     row['rarity']      ?? '',
+        designtype: row['designtype']  ?? row['design_type'] ?? row['designtype'] ?? '',
+        subtype:    row['subtype']     ?? row['sub_type']   ?? '',
+        faction:    row['faction']     ?? '',
+        growth:     row['growth']      ?? row['growthstage'] ?? '',
+        owner:      row['owner']       ?? '',
+        ownerlink:  row['ownerlink']   ?? row['owner_link'] ?? '#',
+        artist:     row['artist']      ?? '',
+        artistlink: row['artistlink']  ?? row['artist_link'] ?? '#',
+        designer:   row['designer']    ?? '',
+        designerlink: row['designerlink'] ?? row['designer_link'] ?? '#',
+        traits:     row['traits']      ?? '',
+        availFree:   ARPGDEX.toBool(row['availfree']   ?? row['avail_free']   ?? row['무료분양'] ?? false),
+        availResell: ARPGDEX.toBool(row['availresell'] ?? row['avail_resell'] ?? row['재분양']   ?? false),
+        availPaid:   ARPGDEX.toBool(row['availpaid']   ?? row['avail_paid']   ?? row['유료분양'] ?? false),
+        value:      row['value']       ?? '',
+        status:     row['status']      ?? row['adoptstatus'] ?? '',
+        notes:      row['notes']       ?? '',
+        image:      row['image']       ?? row['img']        ?? '',
+        profiledoc: row['profiledoc']  ?? row['profile_doc'] ?? row['profilelink'] ?? '',
+        xp:         Number(row['xp']   ?? 0),
+        xpNext:     Number(row['xpnext'] ?? row['xp_next'] ?? 500),
+        stats: {
+          A: stat('A'), B: stat('B'), C: stat('C'), D: stat('D'), E: stat('E'),
+          F: stat('F'), G: stat('G'), H: stat('H'), I: stat('I'), J: stat('J'),
+        },
+      };
+    }
+
+    /* ---- 데이터 로드 ---- */
+    async function loadData() {
+      // 스트링 + 마스터리스트 병렬 로드
+      const [, rawML] = await Promise.all([
+        ARPGDEX.loadStrings(),
+        ARPGDEX.importSheet('MasterList'),
+      ]);
+
+      // ID가 0이 아닌 행만, ID 내림차순 정렬
+      ML_DATA = rawML
+        .map(normalizeChar)
+        .filter(c => c.id && Number(c.id) !== 0 && c.design)
+        .sort((a, b) => Number(b.id) - Number(a.id));
+
+      // 스트링으로 UI 라벨 적용
+      applyStrings();
+
+      // 초기화
+      state.filtered = [...ML_DATA];
+      const profileId = ARPGDEX.getParam('profile');
+      if (profileId) showProfile(profileId);
+      else renderGrid();
+    }
+
+    /* ---- 스트링 라벨 적용 ---- */
+    function applyStrings() {
+      const S = ARPGDEX.S;
+      // 탭 버튼
+      const tabMap = { info:2, status:3, profile:4, gallery:5, logs:6 };
+      for (const [tab, id] of Object.entries(tabMap)) {
+        const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+        if (btn && S(id)) btn.textContent = S(id);
+      }
+      // 섹션 제목들 (data-sid 속성 기반)
+      document.querySelectorAll('[data-sid]').forEach(el => {
+        const txt = S(Number(el.dataset.sid));
+        if (txt) el.textContent = txt;
+      });
+    }
+
+    /* ============================================================
+       Filter
+    ============================================================= */
+    function filterData() {
+      let arr = [...ML_DATA];
+      if (state.folder !== 'all') arr = arr.filter(d => ARPGDEX.scrub(d.species) === ARPGDEX.scrub(state.folder));
+      if (state.designtype !== 'all') arr = arr.filter(d => d.designtype === state.designtype);
+      if (state.rarity !== 'all') arr = arr.filter(d => d.rarity === state.rarity);
+      if (state.status !== 'all') arr = arr.filter(d => d.status === state.status);
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        arr = arr.filter(d => (d.design + d.owner + d.artist + d.traits).toLowerCase().includes(q));
+      }
+      state.filtered = arr;
+      state.page = 1;
+    }
+
+    /* ============================================================
+       Render Grid
+    ============================================================= */
+    function renderGrid() {
+      const grid  = document.getElementById('masterlist-grid');
+      const empty = document.getElementById('empty-state');
+      const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
+      if (!items.length) {
+        grid.innerHTML = ''; empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        grid.innerHTML = items.map(d => `
+          <div class="gallery-card" onclick="showProfile('${d.design}')">
+            <div class="gallery-card-img">
+              <img src="${d.image}" alt="${d.design}" loading="lazy"
+                onerror="this.style.opacity='.3'">
+            </div>
+            <div class="gallery-card-info">
+              <div class="gallery-card-title">${d.design}</div>
+              <div class="gallery-card-sub">
+                ${ARPGDEX.rarityBadge(d.rarity)}
+                &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${d.owner}
+              </div>
+            </div>
+          </div>`).join('');
+      }
+      ARPGDEX.renderPagination(
+        document.getElementById('pagination'),
+        state.page,
+        Math.ceil(state.filtered.length / PER_PAGE),
+        (p) => { state.page = p; renderGrid(); window.scrollTo(0,0); }
+      );
+    }
+
+    /* ============================================================
+       Show Profile
+    ============================================================= */
+    window.showProfile = (designId) => {
+      const char = ML_DATA.find(d => d.design === designId);
+      if (!char) return;
+      history.pushState({profile: designId}, '', `?profile=${encodeURIComponent(designId)}`);
+      document.getElementById('list-view').classList.add('hidden');
+      document.getElementById('profile-view').classList.remove('hidden');
+
+      // Header
+      document.getElementById('profile-name').textContent = char.design;
+      document.getElementById('profile-id').textContent = `#${char.id}`;
+      document.getElementById('profile-rarity-badge').innerHTML = ARPGDEX.rarityBadge(char.rarity);
+      document.getElementById('profile-img').src = char.image;
+      const ownerEl = document.getElementById('profile-owner-link');
+      ownerEl.textContent = char.owner;
+      ownerEl.href = char.ownerlink || '#';
+
+      // Design Info
+      document.getElementById('info-species').textContent    = char.species;
+      document.getElementById('info-rarity').innerHTML       = ARPGDEX.rarityBadge(char.rarity);
+      document.getElementById('info-designtype').textContent = char.designtype;
+
+      // Sub Info
+      document.getElementById('info-subtype').textContent = char.subtype  || '-';
+      document.getElementById('info-faction').textContent  = char.faction || '-';
+      document.getElementById('info-growth').textContent   = char.growth  || '-';
+
+      // Traits
+      document.getElementById('info-traits').textContent = char.traits || '-';
+
+      // Availability
+      const mark = (v) => v
+        ? `<span style="color:#6eb56e;font-size:1.15rem;font-weight:700;">O</span>`
+        : `<span style="color:#e85050;font-size:1.15rem;font-weight:700;">X</span>`;
+      document.getElementById('info-avail-free').innerHTML   = mark(char.availFree);
+      document.getElementById('info-avail-resell').innerHTML = mark(char.availResell);
+      document.getElementById('info-avail-paid').innerHTML   = mark(char.availPaid);
+
+      // Credits / Value / Status / Notes
+      document.getElementById('info-artist').textContent   = char.artist   || '-';
+      document.getElementById('info-artist').href          = char.artistlink;
+      document.getElementById('info-designer').textContent = char.designer  || '-';
+      document.getElementById('info-designer').href        = char.designerlink;
+      document.getElementById('info-value').textContent    = char.value ? `$${char.value}` : '-';
+      document.getElementById('info-status').textContent   = char.status || '-';
+      document.getElementById('info-notes').textContent    = char.notes  || '-';
+
+      // Profile doc (iframe)
+      const frame = document.getElementById('profile-doc-frame');
+      const docUrl = char.profiledoc ? char.profiledoc.replace('/edit', '/preview').replace('/view', '/preview') : '';
+      if (docUrl) {
+        frame.src = docUrl;
+        document.getElementById('tab-profile').innerHTML = `
+          <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">소유자가 작성한 캐릭터 프로필입니다.</div>
+          <iframe class="embed-frame" src="${docUrl}" allowfullscreen style="min-height:600px;"></iframe>`;
+      } else {
+        document.getElementById('tab-profile').innerHTML =
+          '<div class="empty-state"><i class="fas fa-file-circle-question"></i><p>등록된 프로필 문서가 없습니다.</p></div>';
+      }
+
+      // Gallery tab — 캐릭터 코드 필터 (갤러리 미연동 시 안내)
+      const cgGrid  = document.getElementById('char-gallery-grid');
+      const cgEmpty = document.getElementById('char-gallery-empty');
+      const charGallery = GALLERY_DATA.filter(g =>
+        (g.characters || '').split(',').map(c => c.trim()).includes(designId)
+      );
+      if (!charGallery.length) {
+        cgGrid.innerHTML = ''; cgEmpty.classList.remove('hidden');
+      } else {
+        cgEmpty.classList.add('hidden');
+        cgGrid.innerHTML = charGallery.map(g => `
+          <a class="post-card" href="gallery.html?post=${encodeURIComponent(g.id)}">
+            <div class="post-card-thumb">
+              <img src="${g.thumb}" alt="${g.title}" loading="lazy">
+              <div class="post-card-cat"><span class="badge badge-category">${g.category}</span></div>
+            </div>
+            <div class="post-card-body">
+              <div class="post-card-title">${g.title}</div>
+              <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${g.author}</div>
+            </div>
+          </a>`).join('');
+      }
+
+      // Status tab — stats
+      const MAX_LEVEL = 5;
+      const STAT_DEFS = {
+        A: { name: '체력',    icon: 'fas fa-heart' },
+        B: { name: '공격',    icon: 'fas fa-sword' },
+        C: { name: '방어',    icon: 'fas fa-shield-halved' },
+        D: { name: '속도',    icon: 'fas fa-bolt' },
+        E: { name: '마력',    icon: 'fas fa-wand-sparkles' },
+        F: { name: '지능',    icon: 'fas fa-brain' },
+        G: { name: '행운',    icon: 'fas fa-clover' },
+        H: { name: '카리스마', icon: 'fas fa-star' },
+        I: { name: '스텔스',  icon: 'fas fa-eye-slash' },
+        J: { name: '인내',    icon: 'fas fa-mountain' },
+      };
+      const statColors = {
+        1:'rgba(200,169,110,0.25)', 2:'rgba(200,169,110,0.4)',
+        3:'rgba(200,169,110,0.6)',  4:'rgba(200,169,110,0.8)',
+        5:'var(--primary)'
+      };
+      document.getElementById('status-stats').innerHTML = Object.entries(char.stats).map(([key, val]) => {
+        const def = STAT_DEFS[key] ?? { name: key, icon: 'fas fa-circle' };
+        const pct = Math.round((val / MAX_LEVEL) * 100);
+        const dots = Array.from({length: MAX_LEVEL}, (_, i) =>
+          `<div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;
+            background:${i < val ? 'var(--primary)' : 'var(--bg-raised)'};
+            border:1px solid ${i < val ? 'var(--primary)' : 'var(--border)'};
+            transition:background .3s ${i*0.05}s;"></div>`
+        ).join('');
+        return `
+          <div>
+            <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem;">
+              <i class="${def.icon}" style="font-size:.8rem;color:var(--primary);width:16px;text-align:center;flex-shrink:0;"></i>
+              <span style="font-size:.82rem;font-weight:600;color:var(--text-secondary);min-width:54px;flex-shrink:0;">${def.name}</span>
+              <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
+              <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:28px;text-align:right;">${val}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${MAX_LEVEL}</span></span>
+            </div>
+            <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:82px;">
+              <div class="stat-bar-fill" data-pct="${pct}"
+                style="height:100%;border-radius:100px;background:${statColors[val]??'var(--primary)'};width:0%;transition:width .5s ease;"></div>
+            </div>
+          </div>`;
+      }).join('');
+      setTimeout(() => {
+        document.querySelectorAll('.stat-bar-fill').forEach(el => {
+          el.style.width = el.dataset.pct + '%';
+        });
+      }, 80);
+
+      // Logs — 현재는 빈 상태 (추후 로그 시트 연동)
+      document.getElementById('log-list').innerHTML = '';
+      document.getElementById('log-empty').classList.remove('hidden');
+
+      // Prev / Next
+      const idx = state.filtered.findIndex(d => d.design === designId);
+      const prev = state.filtered[idx - 1];
+      const next = state.filtered[idx + 1];
+      const prevEl = document.getElementById('prev-entry');
+      const nextEl = document.getElementById('next-entry');
+      if (prev) {
+        prevEl.style.display = '';
+        document.getElementById('prev-name').textContent = prev.design;
+        prevEl.onclick = (e) => { e.preventDefault(); showProfile(prev.design); };
+      } else prevEl.style.display = 'none';
+      if (next) {
+        nextEl.style.display = '';
+        document.getElementById('next-name').textContent = next.design;
+        nextEl.onclick = (e) => { e.preventDefault(); showProfile(next.design); };
+      } else nextEl.style.display = 'none';
+
+      // 탭 초기화
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelector('.tab-btn[data-tab="info"]').classList.add('active');
+      document.getElementById('tab-info').classList.add('active');
+
+      window.scrollTo(0, 0);
+    };
+
+    /* ============================================================
+       Tab / Filter / Back 이벤트
+    ============================================================= */
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      history.pushState({}, '', 'masterlist.html');
+      document.getElementById('profile-view').classList.add('hidden');
+      document.getElementById('list-view').classList.remove('hidden');
+    });
+    window.addEventListener('popstate', () => {
+      const pid = ARPGDEX.getParam('profile');
+      if (pid) showProfile(pid);
+      else {
+        document.getElementById('profile-view').classList.add('hidden');
+        document.getElementById('list-view').classList.remove('hidden');
+      }
+    });
+
+    ['designtype','rarity','status'].forEach(key => {
+      document.getElementById(`filter-${key}`)?.addEventListener('change', (e) => {
+        state[key] = e.target.value; filterData(); renderGrid();
+      });
+    });
+    document.getElementById('search-input')?.addEventListener('input',
+      ARPGDEX.debounce((e) => { state.search = e.target.value; filterData(); renderGrid(); })
+    );
+    document.querySelectorAll('[data-folder]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-folder]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.folder = btn.dataset.folder; filterData(); renderGrid();
+      });
+    });
+
+    /* Responsive info-grid */
+    function checkInfoGrid() {
+      const g = document.querySelector('.info-grid');
+      if (g) g.style.gridTemplateColumns = window.innerWidth < 640 ? '1fr' : '1fr 1fr';
+    }
+    window.addEventListener('resize', checkInfoGrid);
+
+    /* ============================================================
+       DOMContentLoaded — 시트 로드 시작
+    ============================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      checkInfoGrid();
+
+      // 로딩 표시
+      document.getElementById('masterlist-grid').innerHTML =
+        `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);">
+          <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:.75rem;display:block;"></i>
+          데이터를 불러오는 중입니다…
+        </div>`;
+
+      loadData().catch(err => {
+        console.error('Data load error:', err);
+        document.getElementById('masterlist-grid').innerHTML =
+          `<div style="grid-column:1/-1;" class="empty-state">
+            <i class="fas fa-triangle-exclamation"></i>
+            <p>데이터를 불러오지 못했습니다. 시트 공유 설정을 확인해 주세요.</p>
+          </div>`;
+      });
+    });
+
+  </script>
+</body>
+</html>
 
     /* ============================================================
        MOCK DATA — replace with ARPGDEX.importSheet('masterlist')
