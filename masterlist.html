@@ -358,10 +358,6 @@
           ARPGDEX.importSheet('StatusData'),
         ]);
 
-        console.log('[ARPGDEX] SubOption 첫행 전체:', JSON.stringify(subOpt[0]));
-        console.log('[ARPGDEX] SpeciesData 첫행 전체:', JSON.stringify(speciesData[0]));
-        console.log('[ARPGDEX] SubTypeData 첫행 전체:', JSON.stringify(subTypeData[0]));
-
         // SubOption → DesignType / Rarity / AdoptStatus
         // 각 타입의 raw 키값과 StringId가 별도 컬럼으로 존재
         for (const row of subOpt) {
@@ -378,9 +374,9 @@
           if (rarVal && rarSid) OPT.rarity[rarVal] = ARPGDEX.S(rarSid) || rarVal;
         }
 
-        // SpeciesData → Species (SpeciesName 컬럼이 raw 키값)
+        // SpeciesData → Species
         for (const row of speciesData) {
-          const val = row['speciesname'] || row['species'] || '';
+          const val = row['species'] || '';
           const sid = Number(row['speciesnamestringid'] || 0);
           if (val && sid) OPT.species[val] = ARPGDEX.S(sid) || val;
         }
@@ -485,14 +481,6 @@
         ARPGDEX.importSheet('MasterList'),
         loadOptions(),   // 내부에서 try-catch 처리
       ]);
-
-      // 디버그 로그 (연동 확인 후 제거 가능)
-      if (rawML.length > 0) {
-        console.log('[ARPGDEX] MasterList 컬럼명:', Object.keys(rawML[0]));
-        console.log('[ARPGDEX] 첫 번째 행:', rawML[0]);
-      } else {
-        console.warn('[ARPGDEX] MasterList 데이터 없음');
-      }
 
       // ID 내림차순 정렬
       ML_DATA = rawML
