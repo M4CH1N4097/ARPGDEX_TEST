@@ -8,6 +8,38 @@ const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 /* ---- 전역 메뉴 데이터 ---------------------------------------- */
 export const MENU_GROUPS = [];
 
+/* ---- 전역 사이트 설정 --------------------------------------- */
+export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '' };
+
+/* ---- MainOption 사이트 설정 로드 (F28=사이트명StringId, F36=히어로이미지) */
+export async function loadSiteConfig() {
+  try {
+    // F28(사이트명 StringId), F36(히어로 이미지) 한 번에 가져오기
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F28:F36`;
+    const text = await fetch(url).then(r => r.text());
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rows = json?.table?.rows || [];
+
+    // F28 = 1행 = 사이트명 StringId
+    const nameSid = Number(rows[0]?.c?.[0]?.v || 0);
+    if (nameSid) SITE_CONFIG.name = ARPGDEX.S(nameSid) || SITE_CONFIG.name;
+
+    // F36 = 9행 (F28~F36 범위에서 9번째)
+    const imgCell = rows[8]?.c?.[0];
+    const imgRaw  = imgCell?.v || imgCell?.f || '';
+    if (imgRaw) {
+      const m = imgRaw.match(/\/d\/([\w-]+)/);
+      SITE_CONFIG.heroImage = m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : imgRaw;
+    }
+
+    // 부제 StringId 40
+    SITE_CONFIG.sub = ARPGDEX.S(40) || SITE_CONFIG.sub;
+
+  } catch(e) {
+    console.warn('[ARPGDEX] SiteConfig 로드 실패:', e);
+  }
+}
+
 /* ---- MenuSet 탭 로드 ----------------------------------------- */
 export async function loadMenu() {
   try {
@@ -97,7 +129,7 @@ function buildNav() {
   return `
     <nav id="arpg-nav">
       <div class="nav-inner">
-        <a class="nav-brand" href="index.html">✦ ARPGDEX</a>
+        <a class="nav-brand" href="index.html">✦ ${SITE_CONFIG.name}</a>
         <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
           <i class="fas fa-bars"></i>
         </button>
@@ -156,7 +188,12 @@ async function loadIncludes() {
 
 /* ---- DOMContentLoaded --------------------------------------- */
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadMenu();        // 메뉴 먼저 (스트링 포함)
-  await loadIncludes();    // nav 렌더
-  loadFavicon();           // 비동기 (기다릴 필요 없음)
+  await Promise.all([loadMenu(), loadSiteConfig()]);
+  await loadIncludes();    // nav 렌더 (SITE_CONFIG.name 채워진 후)
+  loadFavicon();
+
+  // 페이지 title 업데이트
+  if (SITE_CONFIG.name) {
+    document.title = document.title.replace('ARPGDEX', SITE_CONFIG.name);
+  }
 });

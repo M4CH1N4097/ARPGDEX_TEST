@@ -20,8 +20,8 @@
 
       <!-- Hero Title Row -->
       <div style="padding:2rem 2.5rem 1.5rem;text-align:center;">
-        <div class="hero-title">ARPGDEX</div>
-        <div class="hero-sub" style="margin-top:.4rem;">창작 종족 ARPG 관리 시스템</div>
+        <div class="hero-title" id="site-name">ARPGDEX</div>
+        <div class="hero-sub" id="site-sub" style="margin-top:.4rem;">창작 종족 ARPG 관리 시스템</div>
       </div>
 
       <!-- Hero Body: Image (left) + Description (right) -->
@@ -29,7 +29,7 @@
 
         <!-- Left: Representative Image -->
         <div style="display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem 2rem;order:1;">
-          <img src="https://picsum.photos/seed/hero/600/400"
+          <img id="hero-image" src="https://picsum.photos/seed/hero/600/400"
                alt="대표 이미지"
                style="max-width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius-lg);opacity:.9;">
         </div>
@@ -78,7 +78,7 @@
   <script src="js/base.js" type="module"></script>
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
-    import { MENU_GROUPS, loadMenu } from './js/base.js';
+    import { MENU_GROUPS, loadMenu, loadSiteConfig, SITE_CONFIG } from './js/base.js';
 
     const mockDesigns = [
       { design: 'CHA-001', image: 'https://picsum.photos/seed/c1/200/200', owner: 'Alice' },
@@ -115,8 +115,23 @@
 
       // MENU_GROUPS는 base.js DOMContentLoaded에서 채워지므로
       // 이 스크립트의 DOMContentLoaded와 경쟁할 수 있어 loadMenu 재호출로 보장
-      await loadMenu();
+      await Promise.all([loadMenu(), loadSiteConfig()]);
       renderQuickLinks();
+
+      // 사이트명 / 부제 / 히어로 이미지 적용
+      if (SITE_CONFIG.name) {
+        const nameEl = document.getElementById('site-name');
+        if (nameEl) nameEl.textContent = SITE_CONFIG.name;
+        document.title = SITE_CONFIG.name;
+      }
+      if (SITE_CONFIG.sub) {
+        const subEl = document.getElementById('site-sub');
+        if (subEl) subEl.textContent = SITE_CONFIG.sub;
+      }
+      if (SITE_CONFIG.heroImage) {
+        const imgEl = document.getElementById('hero-image');
+        if (imgEl) imgEl.src = SITE_CONFIG.heroImage;
+      }
 
       // Hero description — main.html fetch
       fetch('main.html')
