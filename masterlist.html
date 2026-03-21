@@ -361,7 +361,17 @@
           ARPGDEX.importSheet('LevelData'),
         ]);
 
-        if (levelData.length > 0) console.log('[ARPGDEX] LevelData 첫행:', JSON.stringify(levelData[0]), '두번째행:', JSON.stringify(levelData[1]));
+        if (levelData.length > 0) {
+          // levelData 구조: { levelgroup, nowlevel, nextlevel }
+          // OPT.levelData[group] = { [nowlevel]: nextlevel }
+          for (const row of levelData) {
+            const group = String(row['levelgroup'] || 'default');
+            const now   = Number(row['nowlevel']   || 0);
+            const next  = Number(row['nextlevel']  || 0);
+            if (!OPT.levelData[group]) OPT.levelData[group] = {};
+            OPT.levelData[group][now] = next;
+          }
+        }
 
         // SubOption → DesignType / AdoptStatus / Rarity (색상 포함)
         for (const row of subOpt) {
@@ -481,6 +491,18 @@
     }
 
     /* ---- 등급 뱃지 (시트 색상 우선, fallback CSS) ---- */
+    /* ---- XP 헬퍼 ---- */
+    function getXpInLevel(totalXp, level, levelGroup) {
+      const table = OPT.levelData[String(levelGroup)] || OPT.levelData['1'] || {};
+      let cumulative = 0;
+      for (let lv = 0; lv < level; lv++) {
+        cumulative += Number(table[lv] ?? 0);
+      }
+      const cur    = totalXp - cumulative;
+      const needed = Number(table[level] ?? 0);
+      return { cur: Math.max(0, cur), needed };
+    }
+
     function rarityBadge(rarityVal) {
       const label = OPT.rarity[rarityVal] || rarityVal;
       const color = OPT.rarityColor[rarityVal];
@@ -683,39 +705,45 @@
         statsEl.innerHTML = '<div class="empty-state" style="padding:1rem;"><i class="fas fa-circle-question"></i><p>스탯 데이터를 불러오지 못했습니다.</p></div>';
       } else {
         statsEl.innerHTML = statEntries.map(([key, def]) => {
-          const statData = char.stats[key] ?? { level: 0, xp: 0 };
-          const level    = statData.level;
-          const xp       = statData.xp;
-          const maxLevel = def.maxLevel || 5;
-          const pct      = Math.round((level / maxLevel) * 100);
-          const alpha    = [0.2, 0.35, 0.55, 0.75, 1.0];
-          const fillColor = `rgba(200,169,110,${alpha[Math.min(level,maxLevel)-1] ?? 0.2})`;
+          const statData  = char.stats[key] ?? { level: 0, xp: 0 };
+          const level     = statData.level;
+          const totalXp   = statData.xp;
+          const maxLevel  = def.maxLevel || 5;
+          const isMax     = level >= maxLevel;
+          const lg        = def.levelGroup || '1';
+          const { cur, needed } = getXpInLevel(totalXp, level, lg);
+          const barPct    = (!isMax && needed > 0) ? Math.min(100, Math.round((cur / needed) * 100)) : (isMax ? 100 : 0);
 
-          const dots = Array.from({length: maxLevel}, (_, i) =>
-            `<div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;
-              background:${i < level ? 'var(--primary)' : 'var(--bg-raised)'};
-              border:1px solid ${i < level ? 'var(--primary)' : 'var(--border)'};
-              transition:background .3s ${i * 0.05}s;"></div>`
-          ).join('');
-
-          // 아이콘: 시트 이미지 있으면 img, 없으면 기본 아이콘
+          // 아이콘
           const iconHtml = def.icon
             ? `<img src="${def.icon}" style="width:16px;height:16px;border-radius:2px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">`
             : `<i class="fas fa-circle" style="font-size:.7rem;color:var(--primary);width:16px;text-align:center;flex-shrink:0;"></i>`;
 
+          // 레벨 표기: Lv. a / b (MAX)
+          const levelHtml = `
+            <span style="font-size:.82rem;font-weight:700;color:var(--primary);">Lv. ${level}</span>
+            <span style="font-size:.72rem;color:var(--text-muted);"> / <span style="font-size:.7rem;">${maxLevel}</span></span>
+            ${isMax ? `<span style="font-size:.68rem;color:var(--primary);font-weight:700;letter-spacing:.04em;"> (MAX)</span>` : ''}`;
+
+          // XP 표기: c / d
+          const xpHtml = isMax
+            ? `<span style="font-size:.72rem;color:var(--primary);font-weight:600;">MAX</span>`
+            : `<span style="font-size:.72rem;color:var(--text-secondary);font-weight:600;">${cur.toLocaleString()}</span><span style="font-size:.65rem;color:var(--text-muted);"> / ${needed.toLocaleString()}</span>`;
+
           return `
             <div>
-              <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem;">
+              <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.35rem;">
                 ${iconHtml}
                 <span style="font-size:.82rem;font-weight:600;color:var(--text-secondary);min-width:54px;flex-shrink:0;">${def.name}</span>
-                <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
-                <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:28px;text-align:right;">${level}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${maxLevel}</span></span>
+                <div style="display:flex;align-items:baseline;gap:.1rem;">${levelHtml}</div>
               </div>
-              <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:82px;">
-                <div class="stat-bar-fill" data-pct="${pct}"
-                  style="height:100%;border-radius:100px;background:${level > 0 ? fillColor : 'transparent'};width:0%;transition:width .5s ease;"></div>
+              <div style="display:flex;align-items:center;gap:.6rem;margin-left:82px;">
+                <div style="flex:1;background:var(--bg-faded);border-radius:100px;height:6px;overflow:hidden;border:1px solid var(--border);">
+                  <div class="stat-bar-fill" data-pct="${barPct}"
+                    style="height:100%;border-radius:100px;background:var(--primary);width:0%;transition:width .6s ease;"></div>
+                </div>
+                <div style="min-width:72px;text-align:right;">${xpHtml}</div>
               </div>
-              <div style="font-size:.7rem;color:var(--text-muted);text-align:right;margin-top:.15rem;margin-right:.25rem;">${xp.toLocaleString()} XP</div>
             </div>`;
         }).join('');
 
