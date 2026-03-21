@@ -337,7 +337,7 @@
     let state = {
       filtered:[], folder:'all', designtype:'all', rarity:'all', status:'all', search:'', page:1,
       // 고급 검색
-      adv: { owner:'', artist:'', designer:'', designtype:'', species:'', subtype:'', faction:'', growth:'', rarity:'', traits:'', cangift:'', cantrade:'', cansold:'' }
+      adv: { owner:'', artist:'', designer:'', designtype:'', species:'', subtype:'', faction:'', growth:'', rarity:'', traits:'', traitsArr:[], cangift:'', cantrade:'', cansold:'' }
     };
 
     /* ---- Google Drive URL 변환 (인라인) ---- */
@@ -530,68 +530,210 @@
         });
       });
 
-      // 헬퍼: 셀렉트 옵션 생성
-      const buildSelect = (selId, labelId, labelSid, opts) => {
+      // 기본 필터 3개 (일반 select)
+      const buildSelect = (selId, labelSid, opts) => {
         const sel = document.getElementById(selId);
-        const lbl = document.getElementById(labelId);
-        if (lbl) lbl.textContent = S(labelSid) || labelId;
         if (!sel) return;
-        const cur = sel.value;
         sel.innerHTML = `<option value="all">${S(labelSid) || ''}: ${all}</option>`;
         for (const [val, label] of Object.entries(opts)) {
-          sel.innerHTML += `<option value="${val}"${cur===val?' selected':''}>${label}</option>`;
+          sel.innerHTML += `<option value="${val}">${label}</option>`;
         }
       };
-
-      // 기본 필터 3개
-      buildSelect('filter-designtype', null, 10, OPT.designtype);
-      buildSelect('filter-rarity',     null,  9, OPT.rarity);
-      buildSelect('filter-status',     null, 24, OPT.status);
+      buildSelect('filter-designtype', 10, OPT.designtype);
+      buildSelect('filter-rarity',      9, OPT.rarity);
+      buildSelect('filter-status',     24, OPT.status);
 
       // 검색 placeholder
       const si = document.getElementById('search-input');
       if (si) si.placeholder = S(37) || '검색…';
 
-      // 고급 검색 레이블 + 셀렉트
-      // 유저 셀렉트 (Owner, Artist, Designer)
-      const buildUserSelect = (selId, labelId, labelSid) => {
-        const sel = document.getElementById(selId);
-        const lbl = document.getElementById(labelId);
-        if (lbl) lbl.textContent = S(labelSid) || labelId;
-        if (!sel) return;
-        sel.innerHTML = `<option value="">— ${S(labelSid) || ''}</option>`;
-        // UserInventory 기반 목록
-        for (const [uid, uname] of Object.entries(OPT.users)) {
-          sel.innerHTML += `<option value="${uid}">${uname}</option>`;
-        }
-      };
-      buildUserSelect('adv-owner',    'adv-label-owner',    5);   // Owner → string ID 없으면 그냥 표시 (Owner 문자열은 별도 없으므로 임시 ID)
-      buildUserSelect('adv-artist',   'adv-label-artist',   21);
-      buildUserSelect('adv-designer', 'adv-label-designer', 22);
+      // 항목 없음 텍스트
+      const emptyP = document.querySelector('#empty-state p');
+      if (emptyP) emptyP.textContent = S(38) || '항목이 없습니다.';
 
-      // 옵션 셀렉트
-      const advOpts = [
-        ['adv-designtype', 'adv-label-designtype', 10, OPT.designtype],
-        ['adv-species',    'adv-label-species',     8, OPT.species],
-        ['adv-subtype',    'adv-label-subtype',    12, OPT.subtype],
-        ['adv-faction',    'adv-label-faction',    13, OPT.faction],
-        ['adv-growth',     'adv-label-growth',     14, OPT.growth],
-        ['adv-rarity',     'adv-label-rarity',      9, OPT.rarity],
+      // ---- 콤보박스 빌더 ----
+      // wrapper div 안에 input + dropdown list 방식으로 구현
+      // 이미 HTML에 <select id="..."> 로 되어있으므로 동적으로 교체
+      const buildCombo = (containerId, labelId, labelText, items, onChange) => {
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = labelText;
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = ''; // select 교체
+
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:relative;';
+
+        const input = document.createElement('input');
+        input.type = 'search';
+        input.className = 'form-control';
+        input.placeholder = `— ${labelText}`;
+        input.autocomplete = 'off';
+        input.style.cssText = 'width:100%;';
+
+        const dropdown = document.createElement('div');
+        dropdown.style.cssText = `
+          display:none;position:absolute;top:100%;left:0;right:0;z-index:500;
+          background:var(--bg-raised);border:1px solid var(--border-strong);
+          border-radius:var(--radius);max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.4);
+        `;
+
+        const renderDropdown = (filter) => {
+          const q = filter.toLowerCase();
+          const filtered = items.filter(([,label]) => !q || label.toLowerCase().includes(q));
+          dropdown.innerHTML = `<div style="padding:.35rem .7rem;font-size:.8rem;color:var(--text-muted);cursor:pointer;"
+            onmousedown="event.preventDefault()" onclick="this.closest('div').previousSibling.value='';this.parentNode.style.display='none';">
+            — ${labelText}
+          </div>`;
+          for (const [val, label] of filtered) {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:.35rem .7rem;font-size:.82rem;color:var(--text-primary);cursor:pointer;';
+            item.textContent = label;
+            item.onmousedown = (e) => e.preventDefault();
+            item.onclick = () => {
+              input.value = label;
+              input.dataset.value = val;
+              dropdown.style.display = 'none';
+              onChange(val);
+            };
+            item.onmouseover = () => item.style.background = 'var(--bg-card)';
+            item.onmouseout  = () => item.style.background = '';
+            dropdown.appendChild(item);
+          }
+          dropdown.style.display = filtered.length ? 'block' : 'none';
+        };
+
+        input.addEventListener('focus', () => renderDropdown(input.value));
+        input.addEventListener('input', () => { input.dataset.value = ''; renderDropdown(input.value); onChange(''); });
+        input.addEventListener('blur',  () => { setTimeout(() => dropdown.style.display = 'none', 150); });
+
+        wrap.appendChild(input);
+        wrap.appendChild(dropdown);
+        container.appendChild(wrap);
+      };
+
+      // 유저 콤보박스 (Owner, Artist, Designer)
+      const userItems = Object.entries(OPT.users).map(([uid, uname]) => [uid, uname]);
+
+      buildCombo('adv-owner',    'adv-label-owner',    S(39)||'Owner',       userItems, v => { state.adv.owner    = v; filterData(); renderGrid(); });
+      buildCombo('adv-artist',   'adv-label-artist',   S(21)||'Artist', userItems, v => { state.adv.artist   = v; filterData(); renderGrid(); });
+      buildCombo('adv-designer', 'adv-label-designer', S(22)||'Designer', userItems, v => { state.adv.designer = v; filterData(); renderGrid(); });
+
+      // 옵션 콤보박스
+      const advOptDefs = [
+        ['adv-designtype', 'adv-label-designtype', S(10)||'디자인 타입', OPT.designtype, 'designtype'],
+        ['adv-species',    'adv-label-species',    S(8) ||'종족',        OPT.species,    'species'],
+        ['adv-subtype',    'adv-label-subtype',    S(12)||'하위 유형',   OPT.subtype,    'subtype'],
+        ['adv-faction',    'adv-label-faction',    S(13)||'진영',        OPT.faction,    'faction'],
+        ['adv-growth',     'adv-label-growth',     S(14)||'성장 단계',   OPT.growth,     'growth'],
+        ['adv-rarity',     'adv-label-rarity',     S(9) ||'등급',        OPT.rarity,     'rarity'],
       ];
-      for (const [selId, lblId, sid, opts] of advOpts) {
-        const sel = document.getElementById(selId);
-        const lbl = document.getElementById(lblId);
-        if (lbl) lbl.textContent = S(sid) || selId;
-        if (!sel) continue;
-        sel.innerHTML = `<option value="">— ${S(sid) || ''}</option>`;
-        for (const [val, label] of Object.entries(opts)) {
-          sel.innerHTML += `<option value="${val}">${label}</option>`;
-        }
+      for (const [cid, lid, ltext, opts, field] of advOptDefs) {
+        buildCombo(cid, lid, ltext, Object.entries(opts), v => { state.adv[field] = v; filterData(); renderGrid(); });
       }
 
-      // 특성, 분양 레이블
-      const advLabelMap = { 'adv-label-traits':15, 'adv-label-cangift':17, 'adv-label-cantrade':18, 'adv-label-cansold':19 };
-      for (const [id, sid] of Object.entries(advLabelMap)) {
+      // 특성 레이블
+      const traitLbl = document.getElementById('adv-label-traits');
+      if (traitLbl) traitLbl.textContent = S(15) || '특성';
+
+      // 특성 다중 선택 — 태그 방식
+      const traitContainer = document.getElementById('adv-traits');
+      if (traitContainer) {
+        const traitWrap = document.createElement('div');
+        traitWrap.style.cssText = 'position:relative;';
+
+        // 선택된 특성 태그 표시 영역
+        const tagArea = document.createElement('div');
+        tagArea.id = 'trait-tags';
+        tagArea.style.cssText = 'display:flex;flex-wrap:wrap;gap:.25rem;min-height:34px;padding:.35rem .7rem;background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius);cursor:text;align-items:center;';
+
+        const traitInput = document.createElement('input');
+        traitInput.type = 'search';
+        traitInput.placeholder = S(15) || '특성 검색…';
+        traitInput.autocomplete = 'off';
+        traitInput.style.cssText = 'border:none;background:transparent;outline:none;color:var(--text-primary);font-size:.82rem;flex:1;min-width:80px;';
+
+        tagArea.appendChild(traitInput);
+
+        const traitDropdown = document.createElement('div');
+        traitDropdown.style.cssText = `
+          display:none;position:absolute;top:100%;left:0;right:0;z-index:500;
+          background:var(--bg-raised);border:1px solid var(--border-strong);
+          border-radius:var(--radius);max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.4);
+        `;
+
+        // 선택된 특성 ID 목록
+        state.adv.traitsArr = state.adv.traitsArr || [];
+
+        const renderTags = () => {
+          // 기존 태그 제거
+          tagArea.querySelectorAll('.trait-tag').forEach(t => t.remove());
+          for (const tid of state.adv.traitsArr) {
+            const trait = OPT.traitMap[tid];
+            const name  = trait ? (ARPGDEX.S(Number(trait['traitname'])) || tid) : tid;
+            const tag = document.createElement('span');
+            tag.className = 'trait-tag';
+            tag.style.cssText = 'display:inline-flex;align-items:center;gap:.2rem;padding:.1rem .45rem;background:var(--bg-raised);border:1px solid var(--border-strong);border-radius:100px;font-size:.72rem;color:var(--text-secondary);cursor:default;';
+            tag.innerHTML = `${name} <span style="cursor:pointer;color:var(--text-muted);" data-tid="${tid}">✕</span>`;
+            tag.querySelector('span').onclick = () => {
+              state.adv.traitsArr = state.adv.traitsArr.filter(t => t !== tid);
+              renderTags();
+              filterData(); renderGrid();
+            };
+            tagArea.insertBefore(tag, traitInput);
+          }
+        };
+
+        const renderTraitDropdown = (q) => {
+          const lower = q.toLowerCase();
+          const allTraits = Object.entries(OPT.traitMap)
+            .filter(([tid]) => !state.adv.traitsArr.includes(tid))
+            .map(([tid, row]) => {
+              const name = ARPGDEX.S(Number(row['traitname'])) || row['traitname'] || tid;
+              return [tid, name, row];
+            })
+            .filter(([,name]) => !lower || name.toLowerCase().includes(lower))
+            .sort(([a],[b]) => Number(a)-Number(b));
+
+          traitDropdown.innerHTML = '';
+          for (const [tid, name, row] of allTraits.slice(0, 30)) {
+            const rarVal   = row['rarity'] || '';
+            const rarColor = OPT.rarityColor[rarVal] || 'var(--primary)';
+            const rarLabel = OPT.rarity[rarVal] || rarVal;
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:.35rem .7rem;font-size:.82rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;';
+            item.innerHTML = `<span style="font-weight:700;color:${rarColor};font-size:.72rem;">[${rarLabel}]</span><span style="color:var(--text-primary);">${name}</span>`;
+            item.onmousedown = (e) => e.preventDefault();
+            item.onclick = () => {
+              if (!state.adv.traitsArr.includes(tid)) {
+                state.adv.traitsArr.push(tid);
+                renderTags();
+                filterData(); renderGrid();
+              }
+              traitInput.value = '';
+              traitDropdown.style.display = 'none';
+            };
+            item.onmouseover = () => item.style.background = 'var(--bg-card)';
+            item.onmouseout  = () => item.style.background = '';
+            traitDropdown.appendChild(item);
+          }
+          traitDropdown.style.display = allTraits.length ? 'block' : 'none';
+        };
+
+        traitInput.addEventListener('focus', () => renderTraitDropdown(traitInput.value));
+        traitInput.addEventListener('input', () => renderTraitDropdown(traitInput.value));
+        traitInput.addEventListener('blur',  () => setTimeout(() => traitDropdown.style.display = 'none', 150));
+        tagArea.addEventListener('click', () => traitInput.focus());
+
+        traitWrap.appendChild(tagArea);
+        traitWrap.appendChild(traitDropdown);
+        traitContainer.parentNode.replaceChild(traitWrap, traitContainer);
+      }
+
+      // 분양 레이블
+      const boolLabelMap = { 'adv-label-cangift':17, 'adv-label-cantrade':18, 'adv-label-cansold':19 };
+      for (const [id, sid] of Object.entries(boolLabelMap)) {
         const el = document.getElementById(id);
         if (el) el.textContent = S(sid) || id;
       }
@@ -603,27 +745,20 @@
         panel.style.display = isOpen ? 'none' : 'block';
       });
 
-      // 고급 검색 이벤트
-      const advFields = ['owner','artist','designer','designtype','species','subtype','faction','growth','rarity'];
-      advFields.forEach(f => {
-        document.getElementById(`adv-${f}`)?.addEventListener('change', e => {
-          state.adv[f] = e.target.value; filterData(); renderGrid();
-        });
-      });
+      // 분양 여부 이벤트 (기존 select 유지)
       ['cangift','cantrade','cansold'].forEach(f => {
         document.getElementById(`adv-${f}`)?.addEventListener('change', e => {
           state.adv[f] = e.target.value; filterData(); renderGrid();
         });
       });
-      document.getElementById('adv-traits')?.addEventListener('input',
-        ARPGDEX.debounce(e => { state.adv.traits = e.target.value.trim(); filterData(); renderGrid(); })
-      );
 
       // 초기화
       document.getElementById('adv-reset')?.addEventListener('click', () => {
-        state.adv = { owner:'', artist:'', designer:'', designtype:'', species:'', subtype:'', faction:'', growth:'', rarity:'', traits:'', cangift:'', cantrade:'', cansold:'' };
+        state.adv = { owner:'', artist:'', designer:'', designtype:'', species:'', subtype:'', faction:'', growth:'', rarity:'', traits:'', traitsArr:[], cangift:'', cantrade:'', cansold:'' };
+        // 콤보박스 인풋 초기화
+        document.querySelectorAll('#adv-search input[type="search"]').forEach(i => { i.value = ''; if (i.dataset) i.dataset.value = ''; });
         document.querySelectorAll('#adv-search select').forEach(s => s.value = '');
-        document.querySelectorAll('#adv-search input').forEach(s => s.value = '');
+        document.querySelectorAll('.trait-tag').forEach(t => t.remove());
         filterData(); renderGrid();
       });
     }
@@ -748,9 +883,9 @@
       if (adv.faction)    arr = arr.filter(d => d.faction    === adv.faction);
       if (adv.growth)     arr = arr.filter(d => d.growth     === adv.growth);
       if (adv.rarity)     arr = arr.filter(d => d.rarity     === adv.rarity);
-      if (adv.traits)     arr = arr.filter(d => {
+      if (adv.traitsArr && adv.traitsArr.length) arr = arr.filter(d => {
         const ids = d.traits.split(',').map(s => s.trim());
-        return ids.includes(adv.traits.trim());
+        return adv.traitsArr.every(tid => ids.includes(tid));
       });
       if (adv.cangift   !== '') arr = arr.filter(d => d.availFree    === (adv.cangift   === 'true'));
       if (adv.cantrade  !== '') arr = arr.filter(d => d.availResell  === (adv.cantrade  === 'true'));
