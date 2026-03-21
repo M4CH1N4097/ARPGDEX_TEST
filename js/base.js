@@ -10,7 +10,7 @@ export const MENU_GROUPS = [];
 export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLink: '' };
 
 /* ---- sessionStorage 헬퍼 (버전 키로 캐시 자동 무효화) ------- */
-const CACHE_VER = 'v4';
+const CACHE_VER = 'v5';
 const cache = {
   get: (key) => { try { const v = sessionStorage.getItem(CACHE_VER + key); return v ? JSON.parse(v) : null; } catch(e) { return null; } },
   set: (key, val) => { try { sessionStorage.setItem(CACHE_VER + key, JSON.stringify(val)); } catch(e) {} },
@@ -95,9 +95,11 @@ export async function loadSiteConfig() {
     const nameSid = Number(rows[0]?.c?.[0]?.v || 0);
     if (nameSid) SITE_CONFIG.name = ARPGDEX.S(nameSid) || SITE_CONFIG.name;
 
-    // F32 = rows[4] — 디스코드 링크
+    // F32 = rows[4] — 디스코드 링크 (URL인 경우만)
     const discordRaw = rows[4]?.c?.[0]?.v || rows[4]?.c?.[0]?.f || '';
-    if (discordRaw) SITE_CONFIG.discordLink = discordRaw;
+    if (discordRaw && (discordRaw.startsWith('http') || discordRaw.startsWith('discord'))) {
+      SITE_CONFIG.discordLink = discordRaw;
+    }
 
     // F36 = rows[8] — 히어로 이미지
     const imgRaw = rows[8]?.c?.[0]?.v || rows[8]?.c?.[0]?.f || '';
