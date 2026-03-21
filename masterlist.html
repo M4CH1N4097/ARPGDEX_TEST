@@ -300,18 +300,21 @@
 
     /* ---- 시트 컬럼 → 내부 필드 정규화 ---- */
     function normalizeChar(row) {
-      // status01~10 → stats A~J
-      const statKeys = ['A','B','C','D','E','F','G','H','I','J'];
+      // status01~10 → stats { key: { level, xp } }
       const stats = {};
-      statKeys.forEach((k, i) => {
-        const col = `status${String(i+1).padStart(2,'0')}`;
-        stats[k] = Number(row[col] || 0);
-      });
+      for (let i = 1; i <= 10; i++) {
+        const pad = String(i).padStart(2, '0');
+        const key = `STATUS${pad}`;  // 런타임에 OPT.stats 순서와 매핑
+        stats[key] = {
+          level: Number(row[`status${pad}`]    || 0),
+          xp:    Number(row[`status${pad}exp`] || 0),
+        };
+      }
 
       return {
         id:           row['id']              || '',
-        design:       row['charaindex']      || '',   // 캐릭터 코드 (예: DOG-0001)
-        charaname:    row['charaname']       || '',   // 캐릭터 이름
+        design:       row['charaindex']      || '',
+        charaname:    row['charaname']       || '',
         species:      row['species']         || '',
         rarity:       row['rarity']          || '',
         designtype:   row['designtypes']     || '',
@@ -335,8 +338,6 @@
         image:        driveImgUrl(row['image']   || ''),
         preview:      driveImgUrl(row['preview'] || ''),
         profiledoc:   row['characterprofile'] || '',
-        xp:           0,
-        xpNext:       500,
         stats,
       };
     }
@@ -347,7 +348,7 @@
        결과: { value: 'dog', label: '강아지' } 형태의 배열
     ============================================================= */
     // 각 탭별 옵션 맵: { [value]: label }
-    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {} };
+    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {} };
 
     async function loadOptions() {
       try {
@@ -358,8 +359,7 @@
           ARPGDEX.importSheet('StatusData'),
         ]);
 
-        // SubOption → DesignType / Rarity / AdoptStatus
-        // 각 타입의 raw 키값과 StringId가 별도 컬럼으로 존재
+        // SubOption → DesignType / AdoptStatus / Rarity (색상 포함)
         for (const row of subOpt) {
           const dtVal  = row['designtypes'];
           const dtSid  = Number(row['designtypesstringid']  || 0);
@@ -370,8 +370,10 @@
           if (stVal && stSid) OPT.status[stVal] = ARPGDEX.S(stSid) || stVal;
 
           const rarVal = row['rarity'];
-          const rarSid = Number(row['raritystringid']       || 0);
-          if (rarVal && rarSid) OPT.rarity[rarVal] = ARPGDEX.S(rarSid) || rarVal;
+          const rarSid = Number(row['raritystringid'] || 0);
+          if (rarVal && rarSid)          OPT.rarity[rarVal]     = ARPGDEX.S(rarSid) || rarVal;
+          if (rarVal && row['raritycolor'])     OPT.rarityColor[rarVal] = row['raritycolor'];
+          if (rarVal && row['raritybackcolor']) OPT.rarityBack[rarVal]  = row['raritybackcolor'];
         }
 
         // SpeciesData → Species
@@ -381,21 +383,39 @@
           if (val && sid) OPT.species[val] = ARPGDEX.S(sid) || val;
         }
 
-        // SubTypeData → SubType / Faction / Stage (각 타입별 컬럼)
+        // SubTypeData → SubType / Faction / Stage
         for (const row of subTypeData) {
-          const subVal     = row['subtype']  || '';
-          const subSid     = Number(row['subtypestringid']  || 0);
-          const facVal     = row['faction']  || '';
-          const factionSid = Number(row['factionstringid']  || 0);
-          const stgVal     = row['stage']    || '';
-          const stageSid   = Number(row['stagestringid']    || 0);
-          if (subVal && subSid)     OPT.subtype[subVal] = ARPGDEX.S(subSid)     || subVal;
-          if (facVal && factionSid) OPT.faction[facVal] = ARPGDEX.S(factionSid) || facVal;
-          if (stgVal && stageSid)   OPT.growth[stgVal]  = ARPGDEX.S(stageSid)   || stgVal;
+          const subVal = row['subtype'] || '';
+          const subSid = Number(row['subtypestringid']  || 0);
+          const facVal = row['faction'] || '';
+          const facSid = Number(row['factionstringid']  || 0);
+          const stgVal = row['stage']   || '';
+          const stgSid = Number(row['stagestringid']    || 0);
+          if (subVal && subSid) OPT.subtype[subVal] = ARPGDEX.S(subSid) || subVal;
+          if (facVal && facSid) OPT.faction[facVal] = ARPGDEX.S(facSid) || facVal;
+          if (stgVal && stgSid) OPT.growth[stgVal]  = ARPGDEX.S(stgSid) || stgVal;
         }
 
-        } catch(e) {
-        console.warn('[ARPGDEX] 옵션 로드 실패 (필터는 raw 값으로 동작):', e);
+        // StatusData → 스탯 정의 (순서대로 STATUS01~10 에 매핑)
+        // 컬럼: StatueName(raw키), StatusNameStringId, Image, MaxLevel, hide
+        let statIndex = 0;
+        for (const row of statusData) {
+          if (ARPGDEX.toBool(row['hide'])) continue;  // hide된 스탯 제외
+          const key      = `STATUS${String(statIndex + 1).padStart(2, '0')}`;
+          const statName = row['statusname'] || row['statuename'] || '';
+          const sid      = Number(row['statusnamestringid'] || row['statuenamestringid'] || 0);
+          const icon     = driveImgUrl(row['image'] || '');
+          const maxLevel = Number(row['maxlevel'] || 5);
+          OPT.stats[key] = {
+            name:     sid ? (ARPGDEX.S(sid) || statName) : statName,
+            icon,           // 이미지 URL (빈 경우 기본 아이콘 사용)
+            maxLevel,
+          };
+          statIndex++;
+        }
+
+      } catch(e) {
+        console.warn('[ARPGDEX] 옵션 로드 실패:', e);
       }
     }
 
@@ -455,7 +475,18 @@
       }
     }
 
-    /* ---- 스트링 라벨 적용 ---- */
+    /* ---- 등급 뱃지 (시트 색상 우선, fallback CSS) ---- */
+    function rarityBadge(rarityVal) {
+      const label = OPT.rarity[rarityVal] || rarityVal;
+      const color = OPT.rarityColor[rarityVal];
+      const bg    = OPT.rarityBack[rarityVal];
+      if (color && bg) {
+        return `<span style="display:inline-block;padding:.2rem .6rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${color};background:${bg};border:1px solid ${color}40;">${label}</span>`;
+      }
+      // fallback: 기존 CSS 클래스
+      const cls = (rarityVal || '').toLowerCase().replace(/\s/g,'').replace('veryrare','veryrare');
+      return `<span class="badge badge-${cls}">${label}</span>`;
+    }
     function applyStrings() {
       const S = ARPGDEX.S;
       // 탭 버튼
@@ -534,7 +565,7 @@
             <div class="gallery-card-info">
               <div class="gallery-card-title">${d.design}${d.charaname ? ' · ' + d.charaname : ''}</div>
               <div class="gallery-card-sub">
-                ${ARPGDEX.rarityBadge(optLabel(OPT.species, d.rarity) ? d.rarity : d.rarity)}
+                ${rarityBadge(d.rarity)}
                 &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${d.owner}
               </div>
             </div>
@@ -561,7 +592,7 @@
       // Header
       document.getElementById('profile-name').textContent = char.design;
       document.getElementById('profile-id').textContent = `#${char.id}`;
-      document.getElementById('profile-rarity-badge').innerHTML = ARPGDEX.rarityBadge(char.rarity);
+      document.getElementById('profile-rarity-badge').innerHTML = rarityBadge(char.rarity);
       document.getElementById('profile-img').src = char.image;
       const ownerEl = document.getElementById('profile-owner-link');
       ownerEl.textContent = char.owner;
@@ -569,7 +600,7 @@
 
       // Design Info
       document.getElementById('info-species').textContent    = optLabel(OPT.species, char.species);
-      document.getElementById('info-rarity').innerHTML       = ARPGDEX.rarityBadge(char.rarity);
+      document.getElementById('info-rarity').innerHTML       = rarityBadge(char.rarity);
       document.getElementById('info-designtype').textContent = optLabel(OPT.designtype, char.designtype);
 
       // Sub Info
@@ -639,53 +670,56 @@
           </a>`).join('');
       }
 
-      // Status tab — stats
-      const MAX_LEVEL = 5;
-      const STAT_DEFS = {
-        A: { name: '체력',    icon: 'fas fa-heart' },
-        B: { name: '공격',    icon: 'fas fa-sword' },
-        C: { name: '방어',    icon: 'fas fa-shield-halved' },
-        D: { name: '속도',    icon: 'fas fa-bolt' },
-        E: { name: '마력',    icon: 'fas fa-wand-sparkles' },
-        F: { name: '지능',    icon: 'fas fa-brain' },
-        G: { name: '행운',    icon: 'fas fa-clover' },
-        H: { name: '카리스마', icon: 'fas fa-star' },
-        I: { name: '스텔스',  icon: 'fas fa-eye-slash' },
-        J: { name: '인내',    icon: 'fas fa-mountain' },
-      };
-      const statColors = {
-        1:'rgba(200,169,110,0.25)', 2:'rgba(200,169,110,0.4)',
-        3:'rgba(200,169,110,0.6)',  4:'rgba(200,169,110,0.8)',
-        5:'var(--primary)'
-      };
-      document.getElementById('status-stats').innerHTML = Object.entries(char.stats).map(([key, val]) => {
-        const def = STAT_DEFS[key] ?? { name: key, icon: 'fas fa-circle' };
-        const pct = Math.round((val / MAX_LEVEL) * 100);
-        const dots = Array.from({length: MAX_LEVEL}, (_, i) =>
-          `<div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;
-            background:${i < val ? 'var(--primary)' : 'var(--bg-raised)'};
-            border:1px solid ${i < val ? 'var(--primary)' : 'var(--border)'};
-            transition:background .3s ${i*0.05}s;"></div>`
-        ).join('');
-        return `
-          <div>
-            <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem;">
-              <i class="${def.icon}" style="font-size:.8rem;color:var(--primary);width:16px;text-align:center;flex-shrink:0;"></i>
-              <span style="font-size:.82rem;font-weight:600;color:var(--text-secondary);min-width:54px;flex-shrink:0;">${def.name}</span>
-              <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
-              <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:28px;text-align:right;">${val}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${MAX_LEVEL}</span></span>
-            </div>
-            <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:82px;">
-              <div class="stat-bar-fill" data-pct="${pct}"
-                style="height:100%;border-radius:100px;background:${statColors[val]??'var(--primary)'};width:0%;transition:width .5s ease;"></div>
-            </div>
-          </div>`;
-      }).join('');
-      setTimeout(() => {
-        document.querySelectorAll('.stat-bar-fill').forEach(el => {
-          el.style.width = el.dataset.pct + '%';
-        });
-      }, 80);
+      // Status tab — stats (OPT.stats 기반 동적 렌더링)
+      const statEntries = Object.entries(OPT.stats);
+      const statsEl = document.getElementById('status-stats');
+
+      if (!statEntries.length) {
+        statsEl.innerHTML = '<div class="empty-state" style="padding:1rem;"><i class="fas fa-circle-question"></i><p>스탯 데이터를 불러오지 못했습니다.</p></div>';
+      } else {
+        statsEl.innerHTML = statEntries.map(([key, def]) => {
+          const statData = char.stats[key] ?? { level: 0, xp: 0 };
+          const level    = statData.level;
+          const xp       = statData.xp;
+          const maxLevel = def.maxLevel || 5;
+          const pct      = Math.round((level / maxLevel) * 100);
+          const alpha    = [0.2, 0.35, 0.55, 0.75, 1.0];
+          const fillColor = `rgba(200,169,110,${alpha[Math.min(level,maxLevel)-1] ?? 0.2})`;
+
+          const dots = Array.from({length: maxLevel}, (_, i) =>
+            `<div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;
+              background:${i < level ? 'var(--primary)' : 'var(--bg-raised)'};
+              border:1px solid ${i < level ? 'var(--primary)' : 'var(--border)'};
+              transition:background .3s ${i * 0.05}s;"></div>`
+          ).join('');
+
+          // 아이콘: 시트 이미지 있으면 img, 없으면 기본 아이콘
+          const iconHtml = def.icon
+            ? `<img src="${def.icon}" style="width:16px;height:16px;border-radius:2px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">`
+            : `<i class="fas fa-circle" style="font-size:.7rem;color:var(--primary);width:16px;text-align:center;flex-shrink:0;"></i>`;
+
+          return `
+            <div>
+              <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.3rem;">
+                ${iconHtml}
+                <span style="font-size:.82rem;font-weight:600;color:var(--text-secondary);min-width:54px;flex-shrink:0;">${def.name}</span>
+                <div style="display:flex;gap:.3rem;flex:1;">${dots}</div>
+                <span style="font-size:.8rem;font-weight:700;color:var(--primary);min-width:28px;text-align:right;">${level}<span style="font-size:.65rem;color:var(--text-muted);font-weight:400;">/${maxLevel}</span></span>
+              </div>
+              <div style="background:var(--bg-faded);border-radius:100px;height:4px;overflow:hidden;margin-left:82px;">
+                <div class="stat-bar-fill" data-pct="${pct}"
+                  style="height:100%;border-radius:100px;background:${level > 0 ? fillColor : 'transparent'};width:0%;transition:width .5s ease;"></div>
+              </div>
+              ${xp > 0 ? `<div style="font-size:.7rem;color:var(--text-muted);text-align:right;margin-top:.15rem;margin-right:.25rem;">${xp.toLocaleString()} XP</div>` : ''}
+            </div>`;
+        }).join('');
+
+        setTimeout(() => {
+          document.querySelectorAll('.stat-bar-fill').forEach(el => {
+            el.style.width = el.dataset.pct + '%';
+          });
+        }, 80);
+      }
 
       // Logs — 현재는 빈 상태 (추후 로그 시트 연동)
       document.getElementById('log-list').innerHTML = '';
