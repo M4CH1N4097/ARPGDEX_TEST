@@ -95,12 +95,6 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
 
-      // Hero description
-      fetch('main.html')
-        .then(r => r.text())
-        .then(html => { document.getElementById('hero-desc').innerHTML = html; })
-        .catch(() => { document.getElementById('hero-desc').textContent = '소개 글을 불러오지 못했습니다.'; });
-
       // base.js의 loadMenu가 이미 실행됐을 수 있으므로 채워진 경우 바로, 아니면 대기
       const renderQuickLinks = () => {
         const el = document.getElementById('quick-links');
@@ -123,6 +117,12 @@
       // 이 스크립트의 DOMContentLoaded와 경쟁할 수 있어 loadMenu 재호출로 보장
       await loadMenu();
       renderQuickLinks();
+
+      // Hero description — main.html fetch
+      fetch('main.html')
+        .then(r => r.text())
+        .then(html => { document.getElementById('hero-desc').innerHTML = html; })
+        .catch(() => { document.getElementById('hero-desc').textContent = '소개 글을 불러오지 못했습니다.'; });
 
       // Designs
       const designGrid = document.getElementById('recent-designs');
