@@ -105,9 +105,8 @@ hr {
 }
 
 #arpg-nav .nav-inner {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 2rem;
+  width: 100%;
+  padding: 0 3rem;
   display: flex;
   align-items: center;
   height: 64px;
@@ -224,9 +223,8 @@ hr {
 /* Main Container
 /* ============================================================= */
 #main-container {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 2.5rem 2rem;
+  width: 100%;
+  padding: 2.5rem 3rem;
   flex: 1;
   position: relative;
   z-index: 1;
@@ -355,7 +353,7 @@ select.form-control option { background: var(--bg-raised); }
   border-bottom-color: var(--primary);
 }
 
-.tab-pane { display: none; }
+.tab-pane { display: none; width: 100%; box-sizing: border-box; }
 .tab-pane.active { display: block; }
 
 /* ============================================================= */
@@ -589,6 +587,8 @@ select.form-control option { background: var(--bg-raised); }
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 .profile-hero-img {
   max-height: 420px;
@@ -854,6 +854,7 @@ select.form-control option { background: var(--bg-raised); }
 /* ============================================================= */
 @media (max-width: 640px) {
   #main-container { padding: 1.25rem 1rem; }
+  #arpg-nav .nav-inner { padding: 0 1rem; }
   .page-header-card { padding: 1.25rem; }
   .section-card { padding: 1.25rem; }
   .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
