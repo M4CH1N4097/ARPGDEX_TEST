@@ -688,48 +688,43 @@
           .map(id => OPT.traitMap[id])
           .filter(Boolean);
 
-        // TraitType 컬럼명 자동 감지 (첫 행 기준)
-        const sampleTrait = resolved[0] || Object.values(OPT.traitMap)[0];
-        const typeCol  = sampleTrait ? (['traittype','traittypes','type','category'].find(k => sampleTrait[k] !== undefined) || 'traittype') : 'traittype';
-        const nameCol  = sampleTrait ? (['traitname','name','trait','traitnames'].find(k => sampleTrait[k] !== undefined) || 'traitname') : 'traitname';
-        const rarityCol = sampleTrait ? (['rarity','traitsrarity','traitrarity'].find(k => sampleTrait[k] !== undefined) || 'rarity') : 'rarity';
-        const idCol    = 'id';
-
-        // TraitTypes 순서대로 그룹화
+        // TraitTypes 순서대로 그룹화 (traittypes 컬럼 = SubOption의 value)
         const grouped = {};
         for (const trait of resolved) {
-          const typeVal = String(trait[typeCol] || '').trim();
+          const typeVal = String(trait['traittypes'] || '').trim();
           if (!grouped[typeVal]) grouped[typeVal] = [];
           grouped[typeVal].push(trait);
         }
         // 각 그룹 내 ID 순 정렬
         for (const key in grouped) {
-          grouped[key].sort((a, b) => Number(a[idCol]) - Number(b[idCol]));
+          grouped[key].sort((a, b) => Number(a['id']) - Number(b['id']));
         }
 
         // TraitTypes 순서대로 렌더링
         let html = '';
         for (const tt of OPT.traitTypes) {
-          const group = grouped[tt.value] || grouped[String(tt.id)] || [];
+          const group = grouped[tt.value] || [];
           if (!group.length) continue;
-          html += `<div style="margin-bottom:.5rem;">
-            <div style="font-size:.72rem;font-weight:700;color:var(--text-muted);letter-spacing:.06em;margin-bottom:.25rem;">
-              ▾ ${tt.label}
-            </div>`;
+          html += `<div style="margin-bottom:.6rem;">
+            <div style="font-size:.72rem;font-weight:700;color:var(--text-muted);letter-spacing:.06em;margin-bottom:.3rem;">▾ ${tt.label}</div>`;
           for (const trait of group) {
-            const rarVal   = trait[rarityCol] || '';
-            const rarColor = OPT.rarityColor[rarVal] || 'var(--primary)';
-            const rarLabel = OPT.rarity[rarVal] || rarVal;
-            const traitName = trait[nameCol] || trait['traitname'] || trait['name'] || `#${trait[idCol]}`;
-            html += `<div style="font-size:.82rem;padding:.1rem 0;">
+            const rarVal    = trait['rarity']    || '';
+            const rarColor  = OPT.rarityColor[rarVal] || 'var(--primary)';
+            const rarLabel  = OPT.rarity[rarVal] || rarVal;
+            // traitname은 StringId 숫자 → ARPGDEX.S()로 변환
+            const traitName = ARPGDEX.S(Number(trait['traitname'])) || trait['traitname'] || `#${trait['id']}`;
+            html += `<div style="font-size:.82rem;padding:.15rem 0 .15rem .5rem;">
               <span style="font-weight:700;color:${rarColor};">[${rarLabel}]</span>
               <span style="color:var(--text-secondary);"> ${traitName}</span>
             </div>`;
           }
           html += `</div>`;
         }
-        traitsEl.innerHTML = html || char.traits || '-';
+        traitsEl.innerHTML = html || (char.traits || '-');
       }
+
+      // 디버그 로그 제거 (아래 한 줄 삭제 가능)
+      console.log('[ARPGDEX] traitTypes:', OPT.traitTypes.map(t=>t.value), 'traitMap keys:', Object.keys(OPT.traitMap).slice(0,5));
 
       // Availability
       const mark = (v) => v
