@@ -25,41 +25,87 @@
         <!-- Folder tabs (species) -->
         <div style="margin-top:1rem;" class="cat-tabs" id="species-tabs">
           <button class="cat-tab active" data-folder="all">전체</button>
-          <button class="cat-tab" data-folder="dog">Dog</button>
-          <button class="cat-tab" data-folder="cat">Cat</button>
-          <button class="cat-tab" data-folder="bunny">Bunny</button>
         </div>
 
-        <!-- Filters row -->
+        <!-- Basic Filters -->
         <div style="margin-top:.85rem;" class="filter-bar">
-          <select class="form-control" id="filter-designtype" style="max-width:180px;">
-            <option value="all">Design Type: All</option>
-            <option value="Official Design">Official Design</option>
-            <option value="Guest Design">Guest Design</option>
-            <option value="MYO Slot">MYO Slot</option>
-            <option value="MYO Design">MYO Design</option>
-          </select>
-          <select class="form-control" id="filter-rarity" style="max-width:160px;">
-            <option value="all">Rarity: All</option>
-            <option value="Common">Common</option>
-            <option value="Uncommon">Uncommon</option>
-            <option value="Rare">Rare</option>
-            <option value="Very Rare">Very Rare</option>
-            <option value="Legendary">Legendary</option>
-          </select>
-          <select class="form-control" id="filter-status" style="max-width:160px;">
-            <option value="all">Status: All</option>
-            <option value="Resell">Resell</option>
-            <option value="Trade">Trade</option>
-            <option value="Gift">Gift</option>
-            <option value="Voided">Voided</option>
-          </select>
-          <input class="form-control" type="search" id="search-input" placeholder="ID, 디자인명, 소유자, 특성 검색…">
+          <select class="form-control" id="filter-designtype" style="max-width:180px;"></select>
+          <select class="form-control" id="filter-rarity" style="max-width:160px;"></select>
+          <select class="form-control" id="filter-status" style="max-width:160px;"></select>
+          <input class="form-control" type="search" id="search-input" placeholder="검색…">
+          <button class="btn btn-outline btn-sm" id="adv-toggle" style="white-space:nowrap;flex-shrink:0;">
+            <i class="fas fa-sliders"></i> <span id="adv-toggle-label">고급 검색</span>
+          </button>
+        </div>
+
+        <!-- Advanced Search Panel -->
+        <div id="adv-search" style="display:none;margin-top:.75rem;border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.6rem;">
+            <!-- 유저 검색 (Owner/Artist/Designer) -->
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-owner"></label>
+              <select class="form-control" id="adv-owner"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-artist"></label>
+              <select class="form-control" id="adv-artist"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-designer"></label>
+              <select class="form-control" id="adv-designer"><option value="">—</option></select>
+            </div>
+            <!-- 옵션 검색 -->
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-designtype"></label>
+              <select class="form-control" id="adv-designtype"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-species"></label>
+              <select class="form-control" id="adv-species"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-subtype"></label>
+              <select class="form-control" id="adv-subtype"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-faction"></label>
+              <select class="form-control" id="adv-faction"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-growth"></label>
+              <select class="form-control" id="adv-growth"><option value="">—</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-rarity"></label>
+              <select class="form-control" id="adv-rarity"><option value="">—</option></select>
+            </div>
+            <!-- 특성 텍스트 검색 -->
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-traits"></label>
+              <input class="form-control" type="search" id="adv-traits" placeholder="특성 ID…">
+            </div>
+            <!-- 분양 여부 -->
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-cangift"></label>
+              <select class="form-control" id="adv-cangift"><option value="">—</option><option value="true">O</option><option value="false">X</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-cantrade"></label>
+              <select class="form-control" id="adv-cantrade"><option value="">—</option><option value="true">O</option><option value="false">X</option></select>
+            </div>
+            <div>
+              <label style="font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:.3rem;" id="adv-label-cansold"></label>
+              <select class="form-control" id="adv-cansold"><option value="">—</option><option value="true">O</option><option value="false">X</option></select>
+            </div>
+          </div>
+          <div style="margin-top:.75rem;text-align:right;">
+            <button class="btn btn-ghost btn-sm" id="adv-reset"><i class="fas fa-rotate-left"></i> 초기화</button>
+          </div>
         </div>
       </div>
 
       <div class="gallery-grid fade-in" id="masterlist-grid"></div>
-      <div id="empty-state" class="empty-state hidden"><i class="fas fa-dragon"></i><p>항목이 없습니다.</p></div>
+      <div id="empty-state" class="empty-state hidden"><i class="fas fa-dragon"></i><p data-sid="36">항목이 없습니다.</p></div>
       <div class="pagination" id="pagination"></div>
 
     </div>
@@ -288,7 +334,11 @@
     const PER_PAGE = 12;
     let ML_DATA = [];      // 마스터리스트 전체
     let GALLERY_DATA = []; // 갤러리 데이터 (tab 연동용, 추후 연동)
-    let state = { filtered:[], folder:'all', designtype:'all', rarity:'all', status:'all', search:'', page:1 };
+    let state = {
+      filtered:[], folder:'all', designtype:'all', rarity:'all', status:'all', search:'', page:1,
+      // 고급 검색
+      adv: { owner:'', artist:'', designer:'', designtype:'', species:'', subtype:'', faction:'', growth:'', rarity:'', traits:'', cangift:'', cantrade:'', cansold:'' }
+    };
 
     /* ---- Google Drive URL 변환 (인라인) ---- */
     const driveImgUrl = (url) => {
@@ -458,9 +508,12 @@
 
     /* ---- 필터/폴더 탭 동적 생성 ---- */
     function buildFilterUI() {
+      const S   = ARPGDEX.S;
+      const all = S(36) || '전체';
+
       // 종족 폴더 탭
       const speciesTabs = document.getElementById('species-tabs');
-      speciesTabs.innerHTML = `<button class="cat-tab active" data-folder="all">전체</button>`;
+      speciesTabs.innerHTML = `<button class="cat-tab active" data-folder="all">${all}</button>`;
       for (const [val, label] of Object.entries(OPT.species)) {
         const btn = document.createElement('button');
         btn.className = 'cat-tab';
@@ -468,7 +521,6 @@
         btn.textContent = label;
         speciesTabs.appendChild(btn);
       }
-      // 이벤트 재등록
       speciesTabs.querySelectorAll('[data-folder]').forEach(btn => {
         btn.addEventListener('click', () => {
           speciesTabs.querySelectorAll('[data-folder]').forEach(b => b.classList.remove('active'));
@@ -478,33 +530,102 @@
         });
       });
 
-      // Design Type 셀렉트
-      const dtSel = document.getElementById('filter-designtype');
-      dtSel.innerHTML = `<option value="all">${ARPGDEX.S(10) || 'Design Type'}: 전체</option>`;
-      for (const [val, label] of Object.entries(OPT.designtype)) {
-        dtSel.innerHTML += `<option value="${val}">${label}</option>`;
-      }
-
-      // Rarity 셀렉트 — OPT.rarity 기반 (없으면 하드코딩 fallback)
-      const raritySel = document.getElementById('filter-rarity');
-      raritySel.innerHTML = `<option value="all">${ARPGDEX.S(9) || 'Rarity'}: 전체</option>`;
-      if (Object.keys(OPT.rarity).length) {
-        for (const [val, label] of Object.entries(OPT.rarity)) {
-          raritySel.innerHTML += `<option value="${val}">${label}</option>`;
+      // 헬퍼: 셀렉트 옵션 생성
+      const buildSelect = (selId, labelId, labelSid, opts) => {
+        const sel = document.getElementById(selId);
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = S(labelSid) || labelId;
+        if (!sel) return;
+        const cur = sel.value;
+        sel.innerHTML = `<option value="all">${S(labelSid) || ''}: ${all}</option>`;
+        for (const [val, label] of Object.entries(opts)) {
+          sel.innerHTML += `<option value="${val}"${cur===val?' selected':''}>${label}</option>`;
         }
-      } else {
-        // fallback
-        [['Common',35],['Uncommon',36],['Rare',37],['Very Rare',38],['Legendary',39]].forEach(([val,sid]) => {
-          raritySel.innerHTML += `<option value="${val}">${ARPGDEX.S(sid) || val}</option>`;
-        });
+      };
+
+      // 기본 필터 3개
+      buildSelect('filter-designtype', null, 10, OPT.designtype);
+      buildSelect('filter-rarity',     null,  9, OPT.rarity);
+      buildSelect('filter-status',     null, 24, OPT.status);
+
+      // 검색 placeholder
+      const si = document.getElementById('search-input');
+      if (si) si.placeholder = S(37) || '검색…';
+
+      // 고급 검색 레이블 + 셀렉트
+      // 유저 셀렉트 (Owner, Artist, Designer)
+      const buildUserSelect = (selId, labelId, labelSid) => {
+        const sel = document.getElementById(selId);
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = S(labelSid) || labelId;
+        if (!sel) return;
+        sel.innerHTML = `<option value="">— ${S(labelSid) || ''}</option>`;
+        // UserInventory 기반 목록
+        for (const [uid, uname] of Object.entries(OPT.users)) {
+          sel.innerHTML += `<option value="${uid}">${uname}</option>`;
+        }
+      };
+      buildUserSelect('adv-owner',    'adv-label-owner',    5);   // Owner → string ID 없으면 그냥 표시 (Owner 문자열은 별도 없으므로 임시 ID)
+      buildUserSelect('adv-artist',   'adv-label-artist',   21);
+      buildUserSelect('adv-designer', 'adv-label-designer', 22);
+
+      // 옵션 셀렉트
+      const advOpts = [
+        ['adv-designtype', 'adv-label-designtype', 10, OPT.designtype],
+        ['adv-species',    'adv-label-species',     8, OPT.species],
+        ['adv-subtype',    'adv-label-subtype',    12, OPT.subtype],
+        ['adv-faction',    'adv-label-faction',    13, OPT.faction],
+        ['adv-growth',     'adv-label-growth',     14, OPT.growth],
+        ['adv-rarity',     'adv-label-rarity',      9, OPT.rarity],
+      ];
+      for (const [selId, lblId, sid, opts] of advOpts) {
+        const sel = document.getElementById(selId);
+        const lbl = document.getElementById(lblId);
+        if (lbl) lbl.textContent = S(sid) || selId;
+        if (!sel) continue;
+        sel.innerHTML = `<option value="">— ${S(sid) || ''}</option>`;
+        for (const [val, label] of Object.entries(opts)) {
+          sel.innerHTML += `<option value="${val}">${label}</option>`;
+        }
       }
 
-      // Adopt Status 셀렉트
-      const statusSel = document.getElementById('filter-status');
-      statusSel.innerHTML = `<option value="all">${ARPGDEX.S(24) || 'Adopt Status'}: 전체</option>`;
-      for (const [val, label] of Object.entries(OPT.status)) {
-        statusSel.innerHTML += `<option value="${val}">${label}</option>`;
+      // 특성, 분양 레이블
+      const advLabelMap = { 'adv-label-traits':15, 'adv-label-cangift':17, 'adv-label-cantrade':18, 'adv-label-cansold':19 };
+      for (const [id, sid] of Object.entries(advLabelMap)) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = S(sid) || id;
       }
+
+      // 고급 검색 토글
+      document.getElementById('adv-toggle')?.addEventListener('click', () => {
+        const panel = document.getElementById('adv-search');
+        const isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+      });
+
+      // 고급 검색 이벤트
+      const advFields = ['owner','artist','designer','designtype','species','subtype','faction','growth','rarity'];
+      advFields.forEach(f => {
+        document.getElementById(`adv-${f}`)?.addEventListener('change', e => {
+          state.adv[f] = e.target.value; filterData(); renderGrid();
+        });
+      });
+      ['cangift','cantrade','cansold'].forEach(f => {
+        document.getElementById(`adv-${f}`)?.addEventListener('change', e => {
+          state.adv[f] = e.target.value; filterData(); renderGrid();
+        });
+      });
+      document.getElementById('adv-traits')?.addEventListener('input',
+        ARPGDEX.debounce(e => { state.adv.traits = e.target.value.trim(); filterData(); renderGrid(); })
+      );
+
+      // 초기화
+      document.getElementById('adv-reset')?.addEventListener('click', () => {
+        state.adv = { owner:'', artist:'', designer:'', designtype:'', species:'', subtype:'', faction:'', growth:'', rarity:'', traits:'', cangift:'', cantrade:'', cansold:'' };
+        document.querySelectorAll('#adv-search select').forEach(s => s.value = '');
+        document.querySelectorAll('#adv-search input').forEach(s => s.value = '');
+        filterData(); renderGrid();
+      });
     }
 
 
@@ -603,14 +724,38 @@
     ============================================================= */
     function filterData() {
       let arr = [...ML_DATA];
+
+      // 기본 필터
       if (state.folder !== 'all') arr = arr.filter(d => ARPGDEX.scrub(d.species) === ARPGDEX.scrub(state.folder));
       if (state.designtype !== 'all') arr = arr.filter(d => d.designtype === state.designtype);
       if (state.rarity !== 'all') arr = arr.filter(d => d.rarity === state.rarity);
       if (state.status !== 'all') arr = arr.filter(d => d.status === state.status);
+
+      // 텍스트 검색 (charaname 포함)
       if (state.search) {
         const q = state.search.toLowerCase();
-        arr = arr.filter(d => (d.design + d.owner + d.artist + d.traits).toLowerCase().includes(q));
+        arr = arr.filter(d => (d.design + d.charaname + d.owner + d.artist + d.designer + d.traits).toLowerCase().includes(q));
       }
+
+      // 고급 검색
+      const adv = state.adv;
+      if (adv.owner)      arr = arr.filter(d => d.owner      === adv.owner);
+      if (adv.artist)     arr = arr.filter(d => d.artist     === adv.artist);
+      if (adv.designer)   arr = arr.filter(d => d.designer   === adv.designer);
+      if (adv.designtype) arr = arr.filter(d => d.designtype === adv.designtype);
+      if (adv.species)    arr = arr.filter(d => d.species    === adv.species);
+      if (adv.subtype)    arr = arr.filter(d => d.subtype    === adv.subtype);
+      if (adv.faction)    arr = arr.filter(d => d.faction    === adv.faction);
+      if (adv.growth)     arr = arr.filter(d => d.growth     === adv.growth);
+      if (adv.rarity)     arr = arr.filter(d => d.rarity     === adv.rarity);
+      if (adv.traits)     arr = arr.filter(d => {
+        const ids = d.traits.split(',').map(s => s.trim());
+        return ids.includes(adv.traits.trim());
+      });
+      if (adv.cangift   !== '') arr = arr.filter(d => d.availFree    === (adv.cangift   === 'true'));
+      if (adv.cantrade  !== '') arr = arr.filter(d => d.availResell  === (adv.cantrade  === 'true'));
+      if (adv.cansold   !== '') arr = arr.filter(d => d.availPaid    === (adv.cansold   === 'true'));
+
       state.filtered = arr;
       state.page = 1;
     }
@@ -902,13 +1047,6 @@
     document.getElementById('search-input')?.addEventListener('input',
       ARPGDEX.debounce((e) => { state.search = e.target.value; filterData(); renderGrid(); })
     );
-    document.querySelectorAll('[data-folder]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-folder]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.folder = btn.dataset.folder; filterData(); renderGrid();
-      });
-    });
 
     /* Responsive info-grid */
     function checkInfoGrid() {
