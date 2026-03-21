@@ -68,6 +68,7 @@
     PROFILE VIEW
     ============================================================= -->
     <div id="profile-view" class="hidden">
+      <div style="max-width:900px;margin:0 auto;">
 
       <div style="margin-bottom:1rem;">
         <button class="btn btn-ghost btn-sm" id="back-btn">
@@ -194,6 +195,7 @@
 
         </div>
       </div>
+      </div><!-- /max-width wrapper -->
     </div>
 
   </div>
@@ -314,7 +316,7 @@
             <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
             <div class="gallery-card-info">
               <div class="gallery-card-title">${d.design}</div>
-              <div class="gallery-card-sub">${ARPGDEX.rarityBadge(d.rarity)} ${d.owner}</div>
+              <div class="gallery-card-sub">${ARPGDEX.rarityBadge(d.rarity)} &nbsp;<i class="fas fa-user" style="font-size:.65rem;opacity:.6;margin-right:.2rem;"></i>${d.owner}</div>
             </div>
           </div>`).join('');
       }

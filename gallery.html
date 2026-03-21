@@ -58,6 +58,7 @@
     DETAIL VIEW
     ============================================================= -->
     <div id="detail-view" class="hidden">
+      <div style="max-width:900px;margin:0 auto;">
 
       <!-- Back button -->
       <div style="margin-bottom:1rem;">
@@ -119,6 +120,7 @@
         </div>
 
       </div>
+      </div><!-- /max-width wrapper -->
 
     </div>
 
@@ -312,9 +314,11 @@
         ? chars.map(c => `<a href="masterlist.html?profile=${encodeURIComponent(c)}" class="tag-pill">${c}</a>`).join(' ')
         : '-';
 
-      // Images
-      document.getElementById('detail-images').innerHTML = post.images.map(img => `
-        <img src="${img}" alt="${post.title}" style="max-height:500px;max-width:100%;border-radius:var(--radius);object-fit:contain;">`).join('');
+      // Images — 첫 번째 이미지 1장만 표시
+      const firstImg = post.images[0];
+      document.getElementById('detail-images').innerHTML = firstImg
+        ? `<img src="${firstImg}" alt="${post.title}" style="max-height:600px;max-width:100%;border-radius:var(--radius);object-fit:contain;">`
+        : '';
 
       // Prev / Next
       const idx = state.filtered.findIndex(p => p.id === id);
