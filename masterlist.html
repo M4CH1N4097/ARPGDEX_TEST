@@ -358,39 +358,44 @@
           ARPGDEX.importSheet('StatusData'),
         ]);
 
-        // SubOption → DesignType / Rarity
+        console.log('[ARPGDEX] SubOption 첫행 전체:', JSON.stringify(subOpt[0]));
+        console.log('[ARPGDEX] SpeciesData 첫행 전체:', JSON.stringify(speciesData[0]));
+        console.log('[ARPGDEX] SubTypeData 첫행 전체:', JSON.stringify(subTypeData[0]));
+
+        // SubOption → DesignType / Rarity / AdoptStatus
+        // 각 타입의 raw 키값과 StringId가 별도 컬럼으로 존재
         for (const row of subOpt) {
-          const val = row['value'] || row['id'] || '';
-          if (!val) continue;
+          const dtVal  = row['designtypes'];
           const dtSid  = Number(row['designtypesstringid']  || 0);
+          if (dtVal && dtSid) OPT.designtype[dtVal] = ARPGDEX.S(dtSid) || dtVal;
+
+          const stVal  = row['adoptstatue'];
+          const stSid  = Number(row['adoptstatuestringid']  || 0);
+          if (stVal && stSid) OPT.status[stVal] = ARPGDEX.S(stSid) || stVal;
+
+          const rarVal = row['rarity'];
           const rarSid = Number(row['raritystringid']       || 0);
-          if (dtSid)  OPT.designtype[val] = ARPGDEX.S(dtSid)  || val;
-          if (rarSid) OPT.rarity[val]     = ARPGDEX.S(rarSid) || val;
+          if (rarVal && rarSid) OPT.rarity[rarVal] = ARPGDEX.S(rarSid) || rarVal;
         }
 
-        // StatusData → AdoptStatus
-        for (const row of statusData) {
-          const val = row['value'] || row['id'] || '';
-          const sid = Number(row['adoptstatuestringid'] || 0);
-          if (val && sid) OPT.status[val] = ARPGDEX.S(sid) || val;
-        }
-
-        // SpeciesData → Species
+        // SpeciesData → Species (SpeciesName 컬럼이 raw 키값)
         for (const row of speciesData) {
-          const val = row['value'] || row['id'] || '';
+          const val = row['speciesname'] || row['species'] || '';
           const sid = Number(row['speciesnamestringid'] || 0);
           if (val && sid) OPT.species[val] = ARPGDEX.S(sid) || val;
         }
 
-        // SubTypeData → SubType / Faction / Stage
+        // SubTypeData → SubType / Faction / Stage (각 타입별 컬럼)
         for (const row of subTypeData) {
-          const val        = row['value'] || row['id'] || '';
+          const subVal     = row['subtype']  || '';
           const subSid     = Number(row['subtypestringid']  || 0);
+          const facVal     = row['faction']  || '';
           const factionSid = Number(row['factionstringid']  || 0);
+          const stgVal     = row['stage']    || '';
           const stageSid   = Number(row['stagestringid']    || 0);
-          if (val && subSid)     OPT.subtype[val] = ARPGDEX.S(subSid)     || val;
-          if (val && factionSid) OPT.faction[val] = ARPGDEX.S(factionSid) || val;
-          if (val && stageSid)   OPT.growth[val]  = ARPGDEX.S(stageSid)   || val;
+          if (subVal && subSid)     OPT.subtype[subVal] = ARPGDEX.S(subSid)     || subVal;
+          if (facVal && factionSid) OPT.faction[facVal] = ARPGDEX.S(factionSid) || facVal;
+          if (stgVal && stageSid)   OPT.growth[stgVal]  = ARPGDEX.S(stageSid)   || stgVal;
         }
 
         console.log('[ARPGDEX] 옵션 로드됨:', OPT);
@@ -606,15 +611,21 @@
       document.getElementById('info-notes').textContent    = char.notes  || '-';
 
       // Profile doc (iframe)
-      const frame = document.getElementById('profile-doc-frame');
-      const docUrl = char.profiledoc ? char.profiledoc.replace('/edit', '/preview').replace('/view', '/preview') : '';
+      // Profile doc (iframe) — profiledoc 없으면 iframe 아예 제거
+      const tabProfile = document.getElementById('tab-profile');
+      const existingFrame = document.getElementById('profile-doc-frame');
+      if (existingFrame) { existingFrame.src = ''; } // 먼저 빈값으로 리셋
+
+      const docUrl = char.profiledoc
+        ? char.profiledoc.replace('/edit', '/preview').replace('/view', '/preview').replace('/pub', '/preview')
+        : '';
+
       if (docUrl) {
-        frame.src = docUrl;
-        document.getElementById('tab-profile').innerHTML = `
+        tabProfile.innerHTML = `
           <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;">소유자가 작성한 캐릭터 프로필입니다.</div>
-          <iframe class="embed-frame" src="${docUrl}" allowfullscreen style="min-height:600px;"></iframe>`;
+          <iframe id="profile-doc-frame" class="embed-frame" src="${docUrl}" allowfullscreen style="min-height:600px;"></iframe>`;
       } else {
-        document.getElementById('tab-profile').innerHTML =
+        tabProfile.innerHTML =
           '<div class="empty-state"><i class="fas fa-file-circle-question"></i><p>등록된 프로필 문서가 없습니다.</p></div>';
       }
 
