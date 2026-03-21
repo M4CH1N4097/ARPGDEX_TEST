@@ -867,4 +867,5 @@ select.form-control option { background: var(--bg-raised); }
   .post-grid { grid-template-columns: 1fr; }
   .log-row { grid-template-columns: 1fr; gap: 0.2rem; }
   #dual-section { grid-template-columns: 1fr !important; }
+  .hero-body { grid-template-columns: 1fr !important; }
 }
