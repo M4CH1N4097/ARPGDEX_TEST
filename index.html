@@ -65,31 +65,25 @@
       </div>
     </div>
 
-    <!-- Recent Designs -->
-    <div class="section-card fade-in" style="animation-delay:.1s" id="recent-designs-section">
-      <div class="section-card-header">
-        <h3><a href="masterlist.html">Recent Designs</a></h3>
-        <a href="masterlist.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
-      </div>
-      <div class="gallery-grid gallery-grid-sm" id="recent-designs"></div>
-    </div>
+    <!-- Recent Designs + Recent Gallery (side by side) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start;" class="fade-in" style="animation-delay:.1s" id="dual-section">
 
-    <!-- Recent Gallery -->
-    <div class="section-card fade-in" style="animation-delay:.15s" id="recent-gallery-section">
-      <div class="section-card-header">
-        <h3><a href="gallery.html">Recent Gallery</a></h3>
-        <a href="gallery.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+      <div class="section-card" id="recent-designs-section">
+        <div class="section-card-header">
+          <h3><a href="masterlist.html">Recent Designs</a></h3>
+          <a href="masterlist.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="gallery-grid gallery-grid-sm" id="recent-designs"></div>
       </div>
-      <div class="post-grid" id="recent-gallery" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))"></div>
-    </div>
 
-    <!-- Prompts -->
-    <div class="section-card fade-in" style="animation-delay:.2s">
-      <div class="section-card-header">
-        <h3><a href="prompts.html">Active Prompts</a></h3>
-        <a href="prompts.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+      <div class="section-card" id="recent-gallery-section">
+        <div class="section-card-header">
+          <h3><a href="gallery.html">Recent Gallery</a></h3>
+          <a href="gallery.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div id="recent-gallery" style="display:grid;grid-template-columns:1fr;gap:.85rem;"></div>
       </div>
-      <div id="recent-prompts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;"></div>
+
     </div>
 
     <!-- Staff -->
@@ -160,17 +154,6 @@
             <div class="post-card-author"><i class="fas fa-user fa-fw"></i> ${g.author}</div>
           </div>
         </a>`).join('');
-
-      // Prompts
-      const promptsEl = document.getElementById('recent-prompts');
-      promptsEl.innerHTML = mockPrompts.map(p => `
-        <div class="card">
-          <div class="card-header"><span class="text-primary">${p.title}</span></div>
-          <div class="card-body" style="font-size:.875rem;color:var(--text-secondary)">${p.description}</div>
-          <div class="card-footer" style="font-size:.75rem;color:var(--text-muted)">
-            <i class="far fa-calendar fa-fw"></i> 마감: ${p.enddate}
-          </div>
-        </div>`).join('');
 
       // Staff
       const staffEl = document.getElementById('recent-staff');
