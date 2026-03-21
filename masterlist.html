@@ -562,8 +562,11 @@
     }
 
     async function loadData() {
-      // 1. 스트링 먼저 (옵션 한국어 변환에 필요)
-      await ARPGDEX.loadStrings();
+      // 1. 스트링 + 통화 단위 먼저 로드
+      await Promise.all([
+        ARPGDEX.loadStrings(),
+        ARPGDEX.loadCurrency(),
+      ]);
 
       // 2. MasterList + 옵션 + 유저목록 병렬 로드
       const [rawML, rawUsers] = await Promise.all([
@@ -733,7 +736,7 @@
       document.getElementById('info-artist').href        = char.artistlink;
       document.getElementById('info-designer').innerHTML = userNameHTML(char.designer);
       document.getElementById('info-designer').href      = char.designerlink;
-      document.getElementById('info-value').textContent    = char.value ? `$${char.value}` : '-';
+      document.getElementById('info-value').textContent = ARPGDEX.formatValue(char.value);
       document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
       document.getElementById('info-notes').textContent    = char.notes  || '-';
 
