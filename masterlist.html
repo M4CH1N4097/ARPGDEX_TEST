@@ -160,10 +160,23 @@
                   <div id="info-traits" class="traits-scroll text-pre" style="font-size:.85rem;color:var(--text-secondary);"></div>
                 </div>
 
-                <!-- Notes -->
+                <!-- Availability -->
                 <div class="card" style="padding:1.25rem;">
-                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Notes</div>
-                  <div id="info-notes" class="text-pre" style="font-size:.85rem;color:var(--text-secondary);min-height:2rem;"></div>
+                  <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Availability</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;gap:.5rem;">
+                    <div>
+                      <div style="font-size:.7rem;color:var(--text-muted);font-weight:600;margin-bottom:.5rem;">무료분양</div>
+                      <div id="info-avail-free" style="font-size:1.2rem;font-weight:700;"></div>
+                    </div>
+                    <div style="border-left:1px solid var(--border);border-right:1px solid var(--border);">
+                      <div style="font-size:.7rem;color:var(--text-muted);font-weight:600;margin-bottom:.5rem;">재분양</div>
+                      <div id="info-avail-resell" style="font-size:1.2rem;font-weight:700;"></div>
+                    </div>
+                    <div>
+                      <div style="font-size:.7rem;color:var(--text-muted);font-weight:600;margin-bottom:.5rem;">유료분양</div>
+                      <div id="info-avail-paid" style="font-size:1.2rem;font-weight:700;"></div>
+                    </div>
+                  </div>
                 </div>
 
               </div>
@@ -196,6 +209,12 @@
                 </div>
 
               </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="card" style="padding:1.25rem;margin-top:1rem;">
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary);margin-bottom:.75rem;">Notes</div>
+              <div id="info-notes" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);min-height:1.5rem;"></div>
             </div>
 
             <div style="margin-top:1rem;padding:.6rem 1rem;background:var(--bg-faded);border-radius:var(--radius);font-size:.8rem;text-align:center;color:var(--text-muted);">
@@ -280,6 +299,7 @@
         artist: 'ArtistA', artistlink: '#', designer: 'DesignerA', designerlink: '#',
         value: '30', status: 'Resell', notes: '기본 캐릭터입니다.',
         subtype: '야생종', faction: '중립', growth: '성체',
+        availFree: false, availResell: true, availPaid: true,
         image: 'https://picsum.photos/seed/c1/400/400',
         profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
         xp: 320, xpNext: 500,
@@ -291,6 +311,7 @@
         artist: 'ArtistB', artistlink: '#', designer: 'DesignerB', designerlink: '#',
         value: '80', status: 'Trade', notes: '마법을 사용하는 특수 캐릭터.',
         subtype: '마법종', faction: '마법사 길드', growth: '성체',
+        availFree: false, availResell: true, availPaid: false,
         image: 'https://picsum.photos/seed/c2/400/400',
         profiledoc: 'https://docs.google.com/document/d/1YZTktpv-pBf65-8kHJFanF1XrUGtXopf50tzVSUMOJQ/preview',
         xp: 80, xpNext: 500,
@@ -428,7 +449,14 @@
 
       // Info tab — Traits & Notes
       document.getElementById('info-traits').textContent = char.traits;
-      document.getElementById('info-notes').textContent = char.notes || '-';
+
+      // Info tab — Availability
+      const availMark = (val) => val
+        ? `<span style="color:#6eb56e;">O</span>`
+        : `<span style="color:#e85050;">X</span>`;
+      document.getElementById('info-avail-free').innerHTML   = availMark(char.availFree   ?? false);
+      document.getElementById('info-avail-resell').innerHTML = availMark(char.availResell ?? false);
+      document.getElementById('info-avail-paid').innerHTML   = availMark(char.availPaid   ?? false);
 
       // Info tab — Bottom: Credits, Value, Adopt Status
       document.getElementById('info-artist').textContent = char.artist;
@@ -437,6 +465,7 @@
       document.getElementById('info-designer').href = char.designerlink;
       document.getElementById('info-value').textContent = char.value ? `$${char.value}` : '-';
       document.getElementById('info-status').textContent = char.status || '-';
+      document.getElementById('info-notes').textContent = char.notes || '-';
 
       // Profile doc
       const frame = document.getElementById('profile-doc-frame');
