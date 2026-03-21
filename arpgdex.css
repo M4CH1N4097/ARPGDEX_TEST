@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap');
 
 /* ============================================================= */
 /* ARPGDEX — CSS Variables
@@ -29,9 +29,9 @@
   --radius: 0.5rem;
   --radius-lg: 1rem;
 
-  /* Fonts */
-  --font-heading: 'Cinzel', serif;
-  --font-body: 'Nunito', sans-serif;
+  /* Main Fonts — 한국어 지원 */
+  --font-heading: 'Noto Serif KR', 'Georgia', serif;
+  --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
 
   /* Rarity Colors */
   --rarity-common: #a0a0a0;

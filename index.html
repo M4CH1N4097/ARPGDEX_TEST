@@ -20,49 +20,14 @@
         <div class="hero-title">ARPGDEX</div>
         <div class="hero-sub">창작 종족 ARPG 관리 시스템</div>
         <div style="margin-top:1.5rem; display:flex; gap:.6rem; justify-content:center; flex-wrap:wrap;">
-          <a href="masterlist.html" class="btn btn-primary"><i class="fas fa-dragon"></i> 마스터리스트</a>
-          <a href="gallery.html" class="btn btn-outline"><i class="fas fa-images"></i> 갤러리</a>
+          <a href="#" class="btn btn-primary"><i class="fab fa-discord"></i> 디스코드</a>
         </div>
       </div>
     </div>
 
-    <!-- Quick Links -->
+    <!-- Quick Links — generated from NAV_ITEMS in nav-config.js -->
     <div class="section-card fade-in" style="animation-delay:.05s">
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.75rem;">
-        <div>
-          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">About</div>
-          <ul class="link-list">
-            <li><a href="world.html"><i class="fas fa-globe fa-fw" style="margin-right:.4rem;"></i>World</a></li>
-            <li><a href="species.html"><i class="fas fa-paw fa-fw" style="margin-right:.4rem;"></i>Species</a></li>
-            <li><a href="masterlist.html"><i class="fas fa-dragon fa-fw" style="margin-right:.4rem;"></i>Designs</a></li>
-          </ul>
-        </div>
-        <div>
-          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">Community</div>
-          <ul class="link-list">
-            <li><a href="#"><i class="fas fa-floppy-disk fa-fw" style="margin-right:.4rem;"></i>Toyhou.se</a></li>
-            <li><a href="#"><i class="fab fa-discord fa-fw" style="margin-right:.4rem;"></i>Discord</a></li>
-            <li><a href="prompts.html"><i class="fas fa-scroll fa-fw" style="margin-right:.4rem;"></i>Prompts</a></li>
-            <li><a href="gallery.html"><i class="fas fa-images fa-fw" style="margin-right:.4rem;"></i>Gallery</a></li>
-          </ul>
-        </div>
-        <div>
-          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">Resources</div>
-          <ul class="link-list">
-            <li><a href="faq.html"><i class="fas fa-circle-question fa-fw" style="margin-right:.4rem;"></i>FAQ</a></li>
-            <li><a href="terms.html"><i class="fas fa-file-lines fa-fw" style="margin-right:.4rem;"></i>TOS</a></li>
-            <li><a href="staff.html"><i class="fas fa-users fa-fw" style="margin-right:.4rem;"></i>Staff</a></li>
-          </ul>
-        </div>
-        <div>
-          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">SNS</div>
-          <ul class="link-list">
-            <li><a href="#"><i class="fab fa-twitter fa-fw" style="margin-right:.4rem;"></i>Twitter</a></li>
-            <li><a href="#"><i class="fab fa-tumblr fa-fw" style="margin-right:.4rem;"></i>Tumblr</a></li>
-            <li><a href="#"><i class="fas fa-cloud fa-fw" style="margin-right:.4rem;"></i>BlueSky</a></li>
-          </ul>
-        </div>
-      </div>
+      <div id="quick-links" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.75rem;"></div>
     </div>
 
     <!-- Recent Designs + Recent Gallery (side by side) -->
@@ -99,9 +64,10 @@
 
   <div data-include="includes/footer.html"></div>
 
-  <script src="js/base.js"></script>
+  <script src="js/base.js" type="module"></script>
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
+    import { NAV_ITEMS } from './js/nav-config.js';
 
     // --- Mock data (replace with ARPGDEX.importSheet calls) ---
     const mockDesigns = [
@@ -117,11 +83,6 @@
       { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', thumb: 'https://picsum.photos/seed/g3/400/225' },
     ];
 
-    const mockPrompts = [
-      { title: '달빛 산책', description: '달빛이 비치는 밤거리를 걷는 장면을 그려주세요.', enddate: '2025-12-31' },
-      { title: '봄맞이 소풍', description: '봄날 꽃이 핀 들판에서의 소풍 장면을 그려주세요.', enddate: '2025-11-30' },
-    ];
-
     const mockStaff = [
       { username: 'AdminA', jobtitle: 'Owner', image: 'https://picsum.photos/seed/s1/200/200' },
       { username: 'ModB',   jobtitle: 'Moderator', image: 'https://picsum.photos/seed/s2/200/200' },
@@ -129,6 +90,19 @@
     ];
 
     document.addEventListener('DOMContentLoaded', () => {
+
+      // Quick Links — from nav-config
+      document.getElementById('quick-links').innerHTML = NAV_ITEMS.map(group => `
+        <div>
+          <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.6rem;">
+            <i class="${group.icon} fa-fw" style="margin-right:.3rem;"></i>${group.label}
+          </div>
+          <ul class="link-list">
+            ${group.items.map(item => `
+              <li><a href="${item.href}">${item.label}</a></li>
+            `).join('')}
+          </ul>
+        </div>`).join('');
 
       // Designs
       const designGrid = document.getElementById('recent-designs');
