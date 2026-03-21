@@ -21,7 +21,7 @@
     <div id="list-view">
 
       <div class="page-header-card">
-        <h2><a href="masterlist.html" data-sid="47">Species Masterlist</a></h2>
+        <h2><a href="masterlist.html" data-sid="46">Species Masterlist</a></h2>
 
         <!-- Folder tabs (species) -->
         <div style="margin-top:1rem;" class="cat-tabs" id="species-tabs">
@@ -519,7 +519,7 @@
         const btn = document.createElement('button');
         btn.className = 'cat-tab';
         btn.dataset.folder = val;
-        btn.textContent = label;
+        btn.innerHTML = label;
         speciesTabs.appendChild(btn);
       }
       speciesTabs.querySelectorAll('[data-folder]').forEach(btn => {
@@ -550,12 +550,12 @@
 
       // 항목 없음 텍스트
       const emptyP = document.querySelector('#empty-state p');
-      if (emptyP) emptyP.textContent = S(38) || '항목이 없습니다.';
+      if (emptyP) emptyP.innerHTML = S(38) || '항목이 없습니다.';
 
       // ---- 콤보박스 빌더 ----
       const buildCombo = (selId, labelId, labelText, items, onChange) => {
         const lbl = document.getElementById(labelId);
-        if (lbl) lbl.textContent = labelText;
+        if (lbl) lbl.innerHTML = labelText;
 
         const original = document.getElementById(selId);
         if (!original) return;
@@ -595,7 +595,7 @@
           for (const [val, label] of filtered) {
             const item = document.createElement('div');
             item.style.cssText = 'padding:.35rem .7rem;font-size:.82rem;color:var(--text-primary);cursor:pointer;';
-            item.textContent = label;
+            item.innerHTML = label;
             item.onmousedown = e => e.preventDefault();
             item.onclick = () => { input.value = label; input.dataset.value = val; dropdown.style.display = 'none'; onChange(val); };
             item.onmouseover = () => item.style.background = 'var(--bg-card)';
@@ -636,7 +636,7 @@
 
       // 특성 레이블
       const traitLbl = document.getElementById('adv-label-traits');
-      if (traitLbl) traitLbl.textContent = S(15) || '특성';
+      if (traitLbl) traitLbl.innerHTML = S(15) || '특성';
 
       // 특성 다중 선택 — 태그 방식
       const traitContainer = document.getElementById('adv-traits');
@@ -736,7 +736,7 @@
       const boolLabelMap = { 'adv-label-cangift':17, 'adv-label-cantrade':18, 'adv-label-cansold':19 };
       for (const [id, sid] of Object.entries(boolLabelMap)) {
         const el = document.getElementById(id);
-        if (el) el.textContent = S(sid) || id;
+        if (el) el.innerHTML = S(sid) || id;
       }
 
       // 고급 검색 토글
@@ -809,12 +809,12 @@
       const tabMap = { info:2, status:3, profile:4, gallery:5, logs:6 };
       for (const [tab, id] of Object.entries(tabMap)) {
         const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
-        if (btn && S(id)) btn.textContent = S(id);
+        if (btn && S(id)) btn.innerHTML = S(id);
       }
       // data-sid 속성 기반 섹션 제목
       document.querySelectorAll('[data-sid]').forEach(el => {
         const txt = S(Number(el.dataset.sid));
-        if (txt) el.textContent = txt;
+        if (txt) el.innerHTML = txt;
       });
     }
 
@@ -1213,7 +1213,7 @@
           </div>`;
         // 스트링이 로드됐다면 교체
         const p = document.querySelector('[data-sid="35"]');
-        if (p && ARPGDEX.S(35)) p.textContent = ARPGDEX.S(35);
+        if (p && ARPGDEX.S(35)) p.innerHTML = ARPGDEX.S(35);
       });
     });
 
