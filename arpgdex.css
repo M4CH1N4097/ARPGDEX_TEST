@@ -854,6 +854,34 @@ select.form-control option { background: var(--bg-raised); }
 }
 .link-list a:hover { color: var(--primary); border-color: var(--border-strong); background: rgba(200,169,110,0.06); }
 
+/* Tooltip */
+.arpg-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.arpg-tooltip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: .72rem;
+  font-weight: 500;
+  padding: .25rem .55rem;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  z-index: 9999;
+  font-family: var(--font-body);
+}
+.arpg-tooltip:hover::after { opacity: 1; }
+
 /* Scrollbar global */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-faded); }

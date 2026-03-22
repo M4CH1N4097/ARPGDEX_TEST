@@ -772,8 +772,8 @@
       const role = OPT.roles[String(roleId)];
       if (!role || !role.icon) return '';
       const color   = role.iconColor || 'var(--text-primary)';
-      const tooltip = role.description ? ` title="${role.description}"` : '';
-      return `<i class="fas fa-${role.icon}" style="font-size:.72rem;margin-right:.35rem;color:${color};"${tooltip}></i>`;
+      const tip     = role.description ? ` class="arpg-tooltip" data-tip="${role.description}"` : '';
+      return `<span${tip} style="display:inline-flex;align-items:center;margin-right:.35rem;"><i class="fas fa-${role.icon}" style="font-size:.72rem;color:${color};"></i></span>`;
     }
 
     /* ---- 유저 ID → 이름 변환 ---- */

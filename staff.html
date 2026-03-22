@@ -12,9 +12,6 @@
   <div id="main-container">
     <div class="page-header-card">
       <h2><a href="staff.html">Staff</a></h2>
-      <div style="margin-top:1rem;" class="filter-bar">
-        <input class="form-control" type="search" id="search-input" placeholder="검색…">
-      </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;" class="fade-in" id="staff-grid"></div>
     <div class="empty-state hidden" id="empty-state"><i class="fas fa-users"></i><p>운영진 정보가 없습니다.</p></div>
@@ -77,14 +74,6 @@
           ${s.information ? `<hr><div style="font-size:.85rem;color:var(--text-secondary);line-height:1.6;">${s.information}</div>` : ''}
         </div>`).join('');
     }
-
-    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => {
-      const q = e.target.value.toLowerCase();
-      filtered = q
-        ? STAFF.filter(s => (s.username + s.discordId + s.uid).toLowerCase().includes(q))
-        : [...STAFF];
-      render();
-    }));
 
     document.addEventListener('DOMContentLoaded', () => {
       loadData().catch(err => console.error('[ARPGDEX] Staff 로드 실패:', err));
