@@ -99,20 +99,21 @@
       const id  = ARPGDEX.sheetId;
       const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:ZZ`;
       const text = await fetch(url).then(r => r.text());
-      const json = JSON.parse(text.substring(47).slice(0, -2));
+      const raw  = text.substring(47).slice(0, -2);
+      console.log('[fetch] DiscordUserId 셀 raw 샘플:', raw.match(/"v":"[\d]+"/) || raw.match(/"c":\[.{0,200}/));
+      const json = JSON.parse(raw);
 
       const cols = json.table.cols.map((c, i) => ({
         key:  (c.label || '').startsWith('!') ? null : (c.label || '').toLowerCase().replace(/\s/g, ''),
         type: c.type || '',
       }));
 
-      return json.table.rows.map(row => {
+      const result = json.table.rows.map(row => {
         const obj = {};
         cols.forEach(({ key, type }, i) => {
           if (!key) return;
           const cell = row.c?.[i];
           if (!cell) { obj[key] = ''; return; }
-          // string 타입은 v 우선 (f가 없거나 빈 경우 많음)
           if (type === 'string') {
             obj[key] = cell.v != null && cell.v !== '' ? String(cell.v) : (cell.f || '');
           } else {
@@ -125,6 +126,8 @@
         if (h !== undefined && String(h).toUpperCase() === 'TRUE') return false;
         return Object.values(r).some(v => v !== '');
       });
+      console.log('[fetch] 파싱결과 첫행:', JSON.stringify(result[0]));
+      return result;
     }
     const driveImg = url => {
       if (!url) return '';
