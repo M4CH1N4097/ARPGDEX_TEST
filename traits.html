@@ -7,43 +7,37 @@
   <meta name="robots" content="noai, noimageai">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   <link rel="stylesheet" href="arpgdex.css">
+  <link rel="icon" href="data:,">
 </head>
 <body>
   <div data-include="includes/header.html"></div>
 
   <div id="main-container">
 
+    <!-- List View -->
     <div id="list-view">
       <div class="page-header-card">
-        <h2><a href="traits.html">Trait Catalogue</a></h2>
-        <div style="margin-top:1rem;" class="cat-tabs" id="type-tabs">
-          <button class="cat-tab active" data-cat="all">All</button>
-          <button class="cat-tab" data-cat="Ears">Ears</button>
-          <button class="cat-tab" data-cat="Eyes">Eyes</button>
-          <button class="cat-tab" data-cat="Body">Body</button>
-          <button class="cat-tab" data-cat="Limbs">Limbs</button>
-          <button class="cat-tab" data-cat="Tails">Tails</button>
-          <button class="cat-tab" data-cat="Misc">Misc</button>
-          <button class="cat-tab" data-cat="Mutations">Mutations</button>
-        </div>
+        <h2><a href="traits.html" id="page-title">Trait Catalogue</a></h2>
+
+        <!-- Species 탭 (동적) -->
+        <div style="margin-top:1rem;" class="cat-tabs" id="species-tabs"></div>
+
+        <!-- TraitType 탭 (동적) -->
+        <div style="margin-top:.5rem;" class="cat-tabs" id="type-tabs"></div>
+
+        <!-- 필터 바 -->
         <div style="margin-top:.85rem;" class="filter-bar">
-          <select class="form-control" id="filter-rarity" style="max-width:160px;">
-            <option value="all">Rarity: All</option>
-            <option value="Common">Common</option>
-            <option value="Uncommon">Uncommon</option>
-            <option value="Rare">Rare</option>
-            <option value="Very Rare">Very Rare</option>
-            <option value="Legendary">Legendary</option>
-          </select>
-          <input class="form-control" type="search" id="search-input" placeholder="특성명 검색…">
+          <select class="form-control" id="filter-rarity" style="max-width:160px;"></select>
+          <input class="form-control" type="search" id="search-input" placeholder="검색…">
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;" class="fade-in" id="traits-grid"></div>
-      <div id="empty-state" class="empty-state hidden"><i class="fas fa-sparkles"></i><p>특성이 없습니다.</p></div>
+      <div id="empty-state" class="empty-state hidden"><i class="fas fa-sparkles"></i><p id="empty-text">특성이 없습니다.</p></div>
       <div class="pagination" id="pagination"></div>
     </div>
 
+    <!-- Profile View -->
     <div id="profile-view" class="hidden">
       <div style="margin-bottom:1rem;">
         <button class="btn btn-ghost btn-sm" id="back-btn"><i class="fas fa-arrow-left"></i> 목록으로</button>
@@ -58,14 +52,16 @@
             <img id="trait-img" src="" alt="" style="width:100%;border-radius:var(--radius);background:var(--bg-faded);">
             <div>
               <table class="info-table">
-                <tr><td>Trait</td><td id="d-trait"></td></tr>
-                <tr><td>Type</td><td id="d-type"></td></tr>
-                <tr><td>Rarity</td><td id="d-rarity"></td></tr>
-                <tr><td>Price</td><td id="d-price"></td></tr>
+                <tr><td id="lbl-trait">특성</td><td id="d-trait"></td></tr>
+                <tr><td id="lbl-type">유형</td><td id="d-type"></td></tr>
+                <tr><td id="lbl-species">종족</td><td id="d-species"></td></tr>
+                <tr><td id="lbl-subtype">하위 유형</td><td id="d-subtype"></td></tr>
+                <tr><td id="lbl-faction">진영</td><td id="d-faction"></td></tr>
+                <tr><td id="lbl-rarity">등급</td><td id="d-rarity"></td></tr>
               </table>
               <hr>
-              <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Description</div>
-              <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);"></div>
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;" id="lbl-desc">설명</div>
+              <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);line-height:1.7;"></div>
             </div>
           </div>
         </div>
@@ -79,67 +75,237 @@
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
 
-    const TRAITS = [
-      { trait: 'Floppy Ears', type: 'Ears', rarity: 'Common', price: '0', description: '귀가 아래로 늘어진 형태입니다.', image: 'https://picsum.photos/seed/t1/200/200' },
-      { trait: 'Pointed Ears', type: 'Ears', rarity: 'Common', price: '0', description: '뾰족하게 솟아있는 귀입니다.', image: 'https://picsum.photos/seed/t2/200/200' },
-      { trait: 'Big Eyes', type: 'Eyes', rarity: 'Uncommon', price: '5', description: '평균보다 크고 반짝이는 눈입니다.', image: 'https://picsum.photos/seed/t3/200/200' },
-      { trait: 'Magic Eyes', type: 'Eyes', rarity: 'Rare', price: '15', description: '마법의 기운이 담긴 눈입니다.', image: 'https://picsum.photos/seed/t4/200/200' },
-      { trait: 'Spot Tail', type: 'Tails', rarity: 'Common', price: '0', description: '점박이 무늬가 있는 꼬리입니다.', image: 'https://picsum.photos/seed/t5/200/200' },
-      { trait: 'Glowing Tail', type: 'Tails', rarity: 'Very Rare', price: '40', description: '빛을 발하는 신비로운 꼬리입니다.', image: 'https://picsum.photos/seed/t6/200/200' },
-      { trait: 'Dragon Wings', type: 'Body', rarity: 'Legendary', price: '100', description: '용의 날개를 달고 있습니다.', image: 'https://picsum.photos/seed/t7/200/200' },
-      { trait: 'Horn', type: 'Mutations', rarity: 'Rare', price: '20', description: '머리에 뿔이 자라 있습니다.', image: 'https://picsum.photos/seed/t8/200/200' },
-    ];
+    const PER_PAGE = 24;
+    let TRAIT_DATA = [];
+    const OPT = { species:{}, subtype:{}, faction:{}, rarity:{}, rarityColor:{}, rarityBack:{}, traitTypes:[] };
+    let state = { filtered:[], species:'all', type:'all', rarity:'all', search:'', page:1 };
 
-    const PER_PAGE = 12;
-    let state = { filtered: TRAITS, cat: 'all', rarity: 'all', search: '', page: 1 };
+    /* ---- Drive 이미지 URL 변환 ---- */
+    const driveImg = url => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([\w-]+)/);
+      return m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : url;
+    };
 
-    function filter() {
-      let arr = TRAITS;
-      if (state.cat !== 'all') arr = arr.filter(t => t.type === state.cat);
-      if (state.rarity !== 'all') arr = arr.filter(t => t.rarity === state.rarity);
-      if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(t => t.trait.toLowerCase().includes(q)); }
-      state.filtered = arr; state.page = 1;
+    /* ---- 등급 뱃지 ---- */
+    function rarityBadge(val) {
+      const label = OPT.rarity[val] || val;
+      const color = OPT.rarityColor[val];
+      const bg    = OPT.rarityBack[val];
+      if (color && bg) return `<span style="display:inline-block;padding:.2rem .6rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${color};background:${bg};border:1px solid ${color}40;">${label}</span>`;
+      return `<span class="badge">${label}</span>`;
     }
 
-    function render() {
-      const grid = document.getElementById('traits-grid');
+    /* ---- 옵션 로드 ---- */
+    async function loadOptions() {
+      const [subOpt, speciesData, subTypeData] = await Promise.all([
+        ARPGDEX.importSheet('SubOption'),
+        ARPGDEX.importSheet('SpeciesData'),
+        ARPGDEX.importSheet('SubTypeData'),
+      ]);
+
+      // 공통 종족 (species=0)
+      OPT.species['0'] = ARPGDEX.S(54) || '공통';
+
+      for (const row of subOpt) {
+        const rarVal = row['rarity'];
+        const rarSid = Number(row['raritystringid'] || 0);
+        if (rarVal && rarSid)                 OPT.rarity[rarVal]     = ARPGDEX.S(rarSid) || rarVal;
+        if (rarVal && row['raritycolor'])      OPT.rarityColor[rarVal] = row['raritycolor'];
+        if (rarVal && row['raritybackcolor'])  OPT.rarityBack[rarVal]  = row['raritybackcolor'];
+
+        const ttVal = row['traittypes'];
+        const ttSid = Number(row['traittypesstringid'] || 0);
+        if (ttVal && ttSid) OPT.traitTypes.push({ id: Number(row['id']), value: ttVal, label: ARPGDEX.S(ttSid) || ttVal });
+      }
+      OPT.traitTypes.sort((a,b) => a.id - b.id);
+
+      for (const row of speciesData) {
+        const val = row['species'] || '';
+        const sid = Number(row['speciesnamestringid'] || 0);
+        if (val && sid) OPT.species[val] = ARPGDEX.S(sid) || val;
+      }
+
+      for (const row of subTypeData) {
+        const subVal = row['subtype'] || '', subSid = Number(row['subtypestringid'] || 0);
+        const facVal = row['faction'] || '', facSid = Number(row['factionstringid'] || 0);
+        if (subVal && subSid) OPT.subtype[subVal] = ARPGDEX.S(subSid) || subVal;
+        if (facVal && facSid) OPT.faction[facVal] = ARPGDEX.S(facSid) || facVal;
+      }
+    }
+
+    /* ---- 데이터 로드 ---- */
+    async function loadData() {
+      await ARPGDEX.loadStrings();
+      const [rawTraits] = await Promise.all([
+        ARPGDEX.importSheet('TraitList'),
+        loadOptions(),
+      ]);
+
+      TRAIT_DATA = rawTraits
+        .filter(r => !ARPGDEX.toBool(r['hide']))
+        .map(r => ({
+          id:          String(r['id'] || ''),
+          name:        ARPGDEX.S(Number(r['traitname'] || 0)) || r['traitname'] || '',
+          species:     String(r['species'] || '0'),
+          subtype:     String(r['subtype'] || ''),
+          faction:     String(r['faction'] || ''),
+          rarity:      String(r['rarity'] || ''),
+          traittype:   String(r['traittypes'] || ''),
+          image:       driveImg(r['image'] || ''),
+          description: ARPGDEX.S(Number(r['descriptionid'] || 0)) || '',
+        }));
+
+      applyStrings();
+      buildUI();
+
+      const profileId = ARPGDEX.getParam('profile');
+      filterData();
+      if (profileId) showProfile(profileId);
+      else renderGrid();
+    }
+
+    /* ---- 스트링 적용 ---- */
+    function applyStrings() {
+      const S = ARPGDEX.S;
+      const title = document.getElementById('page-title');
+      if (title && S(46)) title.innerHTML = S(46);
+      // 테이블 라벨
+      const map = { 'lbl-trait':47,'lbl-type':11,'lbl-species':8,'lbl-subtype':12,'lbl-faction':13,'lbl-rarity':9,'lbl-desc':25 };
+      for (const [id, sid] of Object.entries(map)) {
+        const el = document.getElementById(id);
+        if (el && S(sid)) el.innerHTML = S(sid);
+      }
+    }
+
+    /* ---- UI 구성 ---- */
+    function buildUI() {
+      const S   = ARPGDEX.S;
+      const all = S(36) || '전체';
+
+      // 종족 탭
+      const speciesTabs = document.getElementById('species-tabs');
+      speciesTabs.innerHTML = `<button class="cat-tab active" data-species="all">${all}</button>`;
+      for (const [val, label] of Object.entries(OPT.species)) {
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab';
+        btn.dataset.species = val;
+        btn.innerHTML = label;
+        speciesTabs.appendChild(btn);
+      }
+      speciesTabs.querySelectorAll('[data-species]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          speciesTabs.querySelectorAll('[data-species]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.species = btn.dataset.species;
+          filterData(); renderGrid();
+        });
+      });
+
+      // TraitType 탭
+      const typeTabs = document.getElementById('type-tabs');
+      typeTabs.innerHTML = `<button class="cat-tab active" data-type="all">${all}</button>`;
+      for (const tt of OPT.traitTypes) {
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab';
+        btn.dataset.type = tt.value;
+        btn.innerHTML = tt.label;
+        typeTabs.appendChild(btn);
+      }
+      typeTabs.querySelectorAll('[data-type]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          typeTabs.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.type = btn.dataset.type;
+          filterData(); renderGrid();
+        });
+      });
+
+      // Rarity 셀렉트
+      const rarSel = document.getElementById('filter-rarity');
+      rarSel.innerHTML = `<option value="all">${S(9) || '등급'}: ${all}</option>`;
+      for (const [val, label] of Object.entries(OPT.rarity)) {
+        rarSel.innerHTML += `<option value="${val}">${label}</option>`;
+      }
+
+      // 검색 placeholder
+      document.getElementById('search-input').placeholder = S(37) || '검색…';
+    }
+
+    /* ---- 필터 ---- */
+    function filterData() {
+      let arr = [...TRAIT_DATA];
+
+      // 종족: 'all'이면 전체, '0'이면 공통, 그 외는 해당 종족 + 공통(0)
+      if (state.species !== 'all') {
+        if (state.species === '0') arr = arr.filter(t => t.species === '0');
+        else arr = arr.filter(t => t.species === state.species || t.species === '0');
+      }
+      if (state.type !== 'all')   arr = arr.filter(t => t.traittype === state.type);
+      if (state.rarity !== 'all') arr = arr.filter(t => t.rarity === state.rarity);
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        arr = arr.filter(t =>
+          [t.name, t.species, t.subtype, t.faction, t.rarity, t.traittype].join(' ').toLowerCase().includes(q)
+        );
+      }
+      state.filtered = arr;
+      state.page = 1;
+    }
+
+    /* ---- 그리드 렌더 ---- */
+    function renderGrid() {
+      const grid  = document.getElementById('traits-grid');
       const empty = document.getElementById('empty-state');
       const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
       if (!items.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
       grid.innerHTML = items.map(t => `
-        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${t.trait}')"
+        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${t.id}')"
           onmouseover="this.style.borderColor='var(--border-strong)';this.style.transform='translateY(-2px)'"
           onmouseout="this.style.borderColor='';this.style.transform=''">
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-family:var(--font-heading);font-size:.85rem;">${t.trait}</span>
-            ${ARPGDEX.rarityBadge(t.rarity)}
+            <span style="font-family:var(--font-heading);font-size:.85rem;">${t.name || '#' + t.id}</span>
+            ${rarityBadge(t.rarity)}
           </div>
           <div style="padding:1rem;display:flex;align-items:center;gap:1rem;">
-            <img src="${t.image}" alt="${t.trait}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius);flex-shrink:0;">
+            ${t.image ? `<img src="${t.image}" alt="${t.name}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius);flex-shrink:0;">` : ''}
             <div style="font-size:.82rem;color:var(--text-secondary);line-height:1.5;">${t.description}</div>
           </div>
         </div>`).join('');
-      ARPGDEX.renderPagination(document.getElementById('pagination'), state.page, Math.ceil(state.filtered.length/PER_PAGE), p => { state.page=p; render(); window.scrollTo(0,0); });
+      ARPGDEX.renderPagination(
+        document.getElementById('pagination'), state.page,
+        Math.ceil(state.filtered.length / PER_PAGE),
+        p => { state.page = p; renderGrid(); window.scrollTo(0,0); }
+      );
     }
 
-    window.showProfile = (name) => {
-      const t = TRAITS.find(x => x.trait === name); if (!t) return;
-      history.pushState({}, '', `?profile=${encodeURIComponent(name)}`);
+    /* ---- 프로필 ---- */
+    window.showProfile = (id) => {
+      const t = TRAIT_DATA.find(x => x.id === String(id));
+      if (!t) return;
+      history.pushState({}, '', `?profile=${encodeURIComponent(id)}`);
       document.getElementById('list-view').classList.add('hidden');
       document.getElementById('profile-view').classList.remove('hidden');
-      document.getElementById('profile-name').textContent = t.trait;
-      document.getElementById('profile-rarity').innerHTML = ARPGDEX.rarityBadge(t.rarity);
-      document.getElementById('trait-img').src = t.image;
-      document.getElementById('d-trait').textContent = t.trait;
-      document.getElementById('d-type').textContent = t.type;
-      document.getElementById('d-rarity').innerHTML = ARPGDEX.rarityBadge(t.rarity);
-      document.getElementById('d-price').textContent = t.price ? `$${t.price}` : 'Free';
-      document.getElementById('d-desc').textContent = t.description;
+
+      document.getElementById('profile-name').innerHTML  = t.name || '#' + t.id;
+      document.getElementById('profile-rarity').innerHTML = rarityBadge(t.rarity);
+      document.getElementById('trait-img').src = t.image || '';
+      document.getElementById('trait-img').style.display = t.image ? '' : 'none';
+
+      document.getElementById('d-trait').innerHTML   = t.name || '-';
+      document.getElementById('d-type').innerHTML    = OPT.traitTypes.find(tt => tt.value === t.traittype)?.label || t.traittype || '-';
+      document.getElementById('d-species').innerHTML = OPT.species[t.species] || t.species || '-';
+      document.getElementById('d-subtype').innerHTML = OPT.subtype[t.subtype] || t.subtype || '-';
+      document.getElementById('d-faction').innerHTML = OPT.faction[t.faction] || t.faction || '-';
+      document.getElementById('d-rarity').innerHTML  = rarityBadge(t.rarity);
+      document.getElementById('d-desc').innerHTML    = t.description || '-';
+
       if (window.innerWidth < 500) document.getElementById('trait-detail-grid').style.gridTemplateColumns = '1fr';
       window.scrollTo(0,0);
     };
 
+    /* ---- 이벤트 ---- */
     document.getElementById('back-btn').addEventListener('click', () => {
       history.pushState({}, '', 'traits.html');
       document.getElementById('profile-view').classList.add('hidden');
@@ -150,20 +316,15 @@
       if (p) showProfile(p);
       else { document.getElementById('profile-view').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); }
     });
-
-    document.querySelectorAll('[data-cat]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-cat]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active'); state.cat = btn.dataset.cat; filter(); render();
-      });
-    });
-    document.getElementById('filter-rarity').addEventListener('change', e => { state.rarity = e.target.value; filter(); render(); });
-    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => { state.search = e.target.value; filter(); render(); }));
+    document.getElementById('filter-rarity').addEventListener('change', e => { state.rarity = e.target.value; filterData(); renderGrid(); });
+    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => { state.search = e.target.value; filterData(); renderGrid(); }));
 
     document.addEventListener('DOMContentLoaded', () => {
-      const p = ARPGDEX.getParam('profile');
-      filter();
-      if (p) showProfile(p); else render();
+      loadData().catch(err => {
+        console.error(err);
+        document.getElementById('traits-grid').innerHTML =
+          `<div style="grid-column:1/-1;" class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${ARPGDEX.S(35) || '데이터를 불러오지 못했습니다.'}</p></div>`;
+      });
     });
   </script>
 </body>
