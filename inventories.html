@@ -54,19 +54,19 @@
         <!-- 탭 -->
         <div style="padding:0;">
           <div class="tab-nav">
-            <button class="tab-btn active" data-tab="inventory" id="tab-btn-inventory">인벤토리</button>
-            <button class="tab-btn" data-tab="designs" id="tab-btn-designs">보유 캐릭터</button>
+            <button class="tab-btn active" data-tab="designs" id="tab-btn-designs">보유 캐릭터</button>
+            <button class="tab-btn" data-tab="inventory" id="tab-btn-inventory">인벤토리</button>
             <button class="tab-btn" data-tab="gallery" id="tab-btn-gallery">갤러리</button>
             <button class="tab-btn" data-tab="logs" id="tab-btn-logs">아이템 기록</button>
           </div>
         </div>
 
         <div style="padding:1.5rem 2rem;">
-          <div class="tab-pane active" id="tab-inventory">
+          <div class="tab-pane" id="tab-inventory">
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;" id="inv-items"></div>
             <div class="empty-state hidden" id="inv-items-empty"><i class="fas fa-box-open"></i><p></p></div>
           </div>
-          <div class="tab-pane" id="tab-designs">
+          <div class="tab-pane active" id="tab-designs">
             <div class="gallery-grid gallery-grid-sm" id="inv-designs"></div>
             <div class="empty-state hidden" id="inv-designs-empty"><i class="fas fa-dragon"></i><p></p></div>
           </div>
@@ -283,13 +283,15 @@
       if (p.inventory.length) {
         invItemsEmpty.classList.add('hidden');
         invItemsEl.innerHTML = p.inventory.map(it => `
-            <div class="card">
+            <a class="card" href="items.html?profile=${encodeURIComponent(it.id)}" style="display:block;text-decoration:none;cursor:pointer;transition:border-color .2s,transform .2s;"
+              onmouseover="this.style.borderColor='var(--border-strong)';this.style.transform='translateY(-2px)'"
+              onmouseout="this.style.borderColor='';this.style.transform=''">
               <div style="padding:.75rem;text-align:center;">
                 ${it.image ? `<img src="${it.image}" alt="${it.name}" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius);margin:0 auto .5rem;display:block;">` : ''}
                 <div style="font-size:.8rem;font-weight:600;">${it.name}</div>
                 <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">× ${it.qty.toLocaleString()}</div>
               </div>
-            </div>`).join('');
+            </a>`).join('');
       } else {
         invItemsEl.innerHTML = '';
         invItemsEmpty.classList.remove('hidden');
@@ -314,8 +316,8 @@
       // 탭 초기화
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(pn => pn.classList.remove('active'));
-      document.querySelector('.tab-btn[data-tab="inventory"]').classList.add('active');
-      document.getElementById('tab-inventory').classList.add('active');
+      document.querySelector('.tab-btn[data-tab="designs"]').classList.add('active');
+      document.getElementById('tab-designs').classList.add('active');
       window.scrollTo(0,0);
     };
 

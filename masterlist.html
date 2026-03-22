@@ -21,7 +21,7 @@
     <div id="list-view">
 
       <div class="page-header-card">
-        <h2><a href="masterlist.html" data-sid="46">Species Masterlist</a></h2>
+        <h2><a href="masterlist.html" data-sid="45">Species Masterlist</a></h2>
 
         <!-- Folder tabs (species) -->
         <div style="margin-top:1rem;" class="cat-tabs" id="species-tabs">
@@ -776,7 +776,7 @@
       const { text, registered } = userName(discordId);
       if (!discordId || text === '-') return '-';
       return registered
-        ? `<i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${text}`
+        ? `<a href="inventories.html?profile=${encodeURIComponent(discordId)}" style="color:inherit;"><i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${text}</a>`
         : `<span style="color:var(--text-muted);">${text}</span>`;
     }
 
