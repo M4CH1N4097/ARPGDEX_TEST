@@ -16,14 +16,21 @@
 
     <div id="list-view">
       <div class="page-header-card">
-        <h2><a href="prompts.html">Prompt Catalogue</a></h2>
-        <div style="margin-top:1rem;" class="filter-bar">
-          <input class="form-control" type="search" id="search-input" placeholder="프롬프트 제목 검색…">
+        <h2><a href="prompts.html" id="page-title">Prompt Catalogue</a></h2>
+
+        <!-- PromptTypes 탭 (동적) -->
+        <div style="margin-top:1rem;" class="cat-tabs" id="type-tabs"></div>
+
+        <!-- 검색 -->
+        <div style="margin-top:.85rem;" class="filter-bar">
+          <input class="form-control" type="search" id="search-input" placeholder="검색…">
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.25rem;" class="fade-in" id="prompts-grid"><div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:.75rem;display:block;"></i>데이터를 불러오는 중입니다…</div></div>
-      <div id="empty-state" class="empty-state hidden"><i class="fas fa-scroll"></i><p>프롬프트가 없습니다.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.25rem;" class="fade-in" id="prompts-grid">
+        <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:.75rem;display:block;"></i>데이터를 불러오는 중입니다…</div>
+      </div>
+      <div id="empty-state" class="empty-state hidden"><i class="fas fa-scroll"></i><p id="empty-text">프롬프트가 없습니다.</p></div>
       <div class="pagination" id="pagination"></div>
     </div>
 
@@ -32,19 +39,23 @@
         <button class="btn btn-ghost btn-sm" id="back-btn"><i class="fas fa-arrow-left"></i> 목록으로</button>
       </div>
       <div class="card fade-in">
+        <!-- 제목 -->
         <div class="card-header" style="padding:1.5rem 2rem;">
           <h2 id="profile-name" style="font-size:1.3rem;"></h2>
         </div>
-        <div id="profile-banner" style="min-height:200px;background:var(--bg-faded);background-size:cover;background-position:center;"></div>
-        <div style="padding:1.5rem 2rem;">
-          <div id="d-desc" class="text-pre" style="font-size:.9rem;color:var(--text-secondary);margin-bottom:1.5rem;"></div>
-          <div style="display:flex;gap:2rem;font-size:.8rem;color:var(--text-muted);">
-            <span><i class="far fa-calendar fa-fw"></i> 시작: <strong id="d-start"></strong></span>
-            <span><i class="fas fa-flag-checkered fa-fw"></i> 마감: <strong id="d-end"></strong></span>
-          </div>
+        <!-- 이미지 -->
+        <div id="profile-banner" style="background:var(--bg-faded);display:flex;align-items:center;justify-content:center;min-height:200px;">
+          <img id="profile-img" src="" alt="" style="max-width:100%;max-height:480px;object-fit:contain;display:none;">
+          <i id="profile-img-placeholder" class="fas fa-image" style="font-size:3rem;color:var(--text-muted);opacity:.3;"></i>
         </div>
-        <div class="card-footer text-right">
-          <a id="d-link" href="#" class="btn btn-primary btn-sm">Check It Out <i class="fas fa-circle-chevron-right fa-fw"></i></a>
+        <!-- 상세 내용 -->
+        <div style="padding:1.5rem 2rem;">
+          <!-- 마감일 -->
+          <div id="profile-enddate-wrap" style="display:none;font-size:.85rem;color:var(--text-muted);margin-bottom:1.25rem;">
+            <i class="fas fa-hourglass-end fa-fw" style="margin-right:.4rem;"></i><span id="profile-enddate"></span>
+          </div>
+          <!-- 상세 설명 -->
+          <div id="profile-desc" class="text-pre" style="font-size:.9rem;color:var(--text-secondary);line-height:1.8;"></div>
         </div>
       </div>
     </div>
@@ -56,56 +67,165 @@
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
 
-    const PROMPTS = [
-      { title: '달빛 산책', description: '달빛이 비치는 밤거리를 걷는 장면을 그려주세요.\n자신의 캐릭터를 사용해 달빛 아래의 분위기를 표현해 보세요.', startdate: '2024-10-01', enddate: '2024-12-31', link: '#', image: 'https://picsum.photos/seed/p1/800/300' },
-      { title: '봄맞이 소풍', description: '봄날 꽃이 핀 들판에서의 소풍 장면을 그려주세요.\n캐릭터들과 함께하는 즐거운 봄날을 표현해 보세요.', startdate: '2024-03-01', enddate: '2024-05-31', link: '#', image: 'https://picsum.photos/seed/p2/800/300' },
-      { title: '겨울 축제', description: '겨울 축제를 즐기는 장면을 그려주세요.\n눈이 내리는 마을 광장에서의 따뜻한 순간을 담아보세요.', startdate: '2024-12-01', enddate: '2025-01-31', link: '#', image: 'https://picsum.photos/seed/p3/800/300' },
-    ];
-
     const PER_PAGE = 9;
-    let state = { filtered: PROMPTS, search: '', page: 1 };
+    let PROMPT_DATA = [];
+    const OPT = { promptTypes: [] }; // [{ id, value, label }]
+    let state = { filtered: [], type: 'all', search: '', page: 1 };
 
-    function filter() {
-      let arr = PROMPTS;
-      if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(p => p.title.toLowerCase().includes(q)); }
-      state.filtered = arr; state.page = 1;
+    /* ---- Drive 이미지 ---- */
+    const driveImg = url => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([\w-]+)/);
+      return m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : url;
+    };
+
+    /* ---- 옵션 로드 ---- */
+    async function loadOptions() {
+      const subOpt = await ARPGDEX.importSheet('SubOption');
+      for (const row of subOpt) {
+        const val = row['prompttype'];
+        const sid = Number(row['prompttypestringid'] || 0);
+        if (val && sid) OPT.promptTypes.push({ id: Number(row['id']), value: val, label: ARPGDEX.S(sid) || val });
+      }
+      OPT.promptTypes.sort((a, b) => a.id - b.id);
     }
 
-    function render() {
-      const grid = document.getElementById('prompts-grid');
+    /* ---- 데이터 로드 ---- */
+    async function loadData() {
+      await ARPGDEX.loadStrings();
+      const [rawPrompts] = await Promise.all([
+        ARPGDEX.importSheet('PromptList'),
+        loadOptions(),
+      ]);
+
+      PROMPT_DATA = rawPrompts
+        .filter(r => !ARPGDEX.toBool(r['hide']) && r['id'] && r['id'] !== '0')
+        .map(r => ({
+          id:          String(r['id'] || ''),
+          name:        ARPGDEX.S(Number(r['promptnameid'] || 0)) || '',
+          note:        ARPGDEX.S(Number(r['noteid']       || 0)) || '',
+          description: ARPGDEX.S(Number(r['descriptionid']|| 0)) || '',
+          enddate:     String(r['enddate'] || ''),
+          prompttype:  String(r['prompttypes'] || r['prompttype'] || ''),
+          image:       driveImg(r['image'] || ''),
+        }));
+
+      applyStrings();
+      buildUI();
+
+      const profileId = ARPGDEX.getParam('profile');
+      filterData();
+      if (profileId) showProfile(profileId);
+      else renderGrid();
+    }
+
+    /* ---- 스트링 적용 ---- */
+    function applyStrings() {
+      const S = ARPGDEX.S;
+      const title = document.getElementById('page-title');
+      if (title && S(49)) title.innerHTML = S(49);
+      const si = document.getElementById('search-input');
+      if (si && S(37)) si.placeholder = S(37);
+      const emptyP = document.getElementById('empty-text');
+      if (emptyP && S(38)) emptyP.innerHTML = S(38);
+    }
+
+    /* ---- UI 구성 ---- */
+    function buildUI() {
+      const S   = ARPGDEX.S;
+      const all = S(36) || '전체';
+      const usedTypes = new Set(PROMPT_DATA.map(p => p.prompttype));
+
+      const typeTabs = document.getElementById('type-tabs');
+      typeTabs.innerHTML = `<button class="cat-tab active" data-type="all">${all}</button>`;
+      for (const tt of OPT.promptTypes) {
+        if (!usedTypes.has(tt.value)) continue;
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab';
+        btn.dataset.type = tt.value;
+        btn.innerHTML = tt.label;
+        typeTabs.appendChild(btn);
+      }
+      typeTabs.querySelectorAll('[data-type]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          typeTabs.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.type = btn.dataset.type;
+          filterData(); renderGrid();
+        });
+      });
+    }
+
+    /* ---- 필터 ---- */
+    function filterData() {
+      let arr = [...PROMPT_DATA];
+      if (state.type !== 'all') arr = arr.filter(p => p.prompttype === state.type);
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        arr = arr.filter(p => (p.name + p.note).toLowerCase().includes(q));
+      }
+      state.filtered = arr;
+      state.page = 1;
+    }
+
+    /* ---- 그리드 렌더 ---- */
+    function renderGrid() {
+      const grid  = document.getElementById('prompts-grid');
       const empty = document.getElementById('empty-state');
       const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
       if (!items.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
       grid.innerHTML = items.map(p => `
-        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${encodeURIComponent(p.title)}')"
+        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${p.id}')"
           onmouseover="this.style.borderColor='var(--border-strong)';this.style.transform='translateY(-2px)'"
           onmouseout="this.style.borderColor='';this.style.transform=''">
-          <div style="height:140px;background:url(${p.image}) center/cover no-repeat;"></div>
-          <div class="card-header" style="font-family:var(--font-heading);font-size:.9rem;">${p.title}</div>
-          <div style="padding:.75rem 1.25rem;font-size:.82rem;color:var(--text-secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.description}</div>
-          <div class="card-footer" style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-muted);">
-            <span>${p.startdate}</span><span>${p.enddate}</span>
-          </div>
+          ${p.image ? `<div style="height:140px;background:url(${p.image}) center/cover no-repeat;"></div>` : ''}
+          <div class="card-header" style="font-family:var(--font-heading);font-size:.9rem;">${p.name || '#' + p.id}</div>
+          <div style="padding:.75rem 1.25rem;font-size:.82rem;color:var(--text-secondary);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.note}</div>
+          ${p.enddate ? `<div class="card-footer" style="font-size:.75rem;color:var(--text-muted);"><i class="fas fa-hourglass-end fa-fw" style="margin-right:.3rem;"></i>${p.enddate}</div>` : ''}
         </div>`).join('');
-      ARPGDEX.renderPagination(document.getElementById('pagination'), state.page, Math.ceil(state.filtered.length/PER_PAGE), p => { state.page=p; render(); window.scrollTo(0,0); });
+      ARPGDEX.renderPagination(
+        document.getElementById('pagination'), state.page,
+        Math.ceil(state.filtered.length / PER_PAGE),
+        p => { state.page = p; renderGrid(); window.scrollTo(0,0); }
+      );
     }
 
-    window.showProfile = (titleEnc) => {
-      const title = decodeURIComponent(titleEnc);
-      const p = PROMPTS.find(x => x.title === title); if (!p) return;
-      history.pushState({}, '', `?profile=${titleEnc}`);
+    /* ---- 프로필 ---- */
+    window.showProfile = (id) => {
+      const p = PROMPT_DATA.find(x => x.id === String(id));
+      if (!p) return;
+      history.pushState({}, '', `?profile=${encodeURIComponent(id)}`);
       document.getElementById('list-view').classList.add('hidden');
       document.getElementById('profile-view').classList.remove('hidden');
-      document.getElementById('profile-name').textContent = p.title;
-      document.getElementById('d-desc').textContent = p.description;
-      document.getElementById('d-start').textContent = p.startdate;
-      document.getElementById('d-end').textContent = p.enddate;
-      document.getElementById('d-link').href = p.link;
-      document.getElementById('profile-banner').style.backgroundImage = `url(${p.image})`;
+
+      document.getElementById('profile-name').innerHTML = p.name || '#' + p.id;
+
+      // 이미지
+      const img = document.getElementById('profile-img');
+      const ph  = document.getElementById('profile-img-placeholder');
+      if (p.image) {
+        img.src = p.image;
+        img.style.display = '';
+        ph.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        ph.style.display = '';
+      }
+
+      // 마감일
+      const dateWrap = document.getElementById('profile-enddate-wrap');
+      const dateEl   = document.getElementById('profile-enddate');
+      if (p.enddate) { dateWrap.style.display = ''; dateEl.textContent = p.enddate; }
+      else { dateWrap.style.display = 'none'; }
+
+      // 설명
+      document.getElementById('profile-desc').innerHTML = p.description || '';
+
       window.scrollTo(0,0);
     };
 
+    /* ---- 이벤트 ---- */
     document.getElementById('back-btn').addEventListener('click', () => {
       history.pushState({}, '', 'prompts.html');
       document.getElementById('profile-view').classList.add('hidden');
@@ -116,10 +236,16 @@
       if (p) showProfile(p);
       else { document.getElementById('profile-view').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); }
     });
-    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => { state.search = e.target.value; filter(); render(); }));
+    document.getElementById('search-input').addEventListener('input',
+      ARPGDEX.debounce(e => { state.search = e.target.value; filterData(); renderGrid(); })
+    );
+
     document.addEventListener('DOMContentLoaded', () => {
-      const p = ARPGDEX.getParam('profile'); filter();
-      if (p) showProfile(p); else render();
+      loadData().catch(err => {
+        console.error(err);
+        document.getElementById('prompts-grid').innerHTML =
+          `<div style="grid-column:1/-1;" class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${ARPGDEX.S(35) || '데이터를 불러오지 못했습니다.'}</p></div>`;
+      });
     });
   </script>
 </body>
