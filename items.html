@@ -7,41 +7,34 @@
   <meta name="robots" content="noai, noimageai">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   <link rel="stylesheet" href="arpgdex.css">
+  <link rel="icon" href="data:,">
 </head>
 <body>
   <div data-include="includes/header.html"></div>
 
   <div id="main-container">
 
+    <!-- List View -->
     <div id="list-view">
       <div class="page-header-card">
-        <h2><a href="items.html">Item Catalogue</a></h2>
-        <div style="margin-top:1rem;" class="cat-tabs" id="type-tabs">
-          <button class="cat-tab active" data-cat="all">All</button>
-          <button class="cat-tab" data-cat="Currency">Currency</button>
-          <button class="cat-tab" data-cat="MYO Slot">MYO Slot</button>
-          <button class="cat-tab" data-cat="Pet">Pet</button>
-          <button class="cat-tab" data-cat="Trait">Trait</button>
-          <button class="cat-tab" data-cat="Misc">Misc</button>
-        </div>
+        <h2><a href="items.html" id="page-title">Item Catalogue</a></h2>
+
+        <!-- ItemType 탭 (동적) -->
+        <div style="margin-top:1rem;" class="cat-tabs" id="type-tabs"></div>
+
+        <!-- 필터 바 -->
         <div style="margin-top:.85rem;" class="filter-bar">
-          <select class="form-control" id="filter-rarity" style="max-width:160px;">
-            <option value="all">Rarity: All</option>
-            <option value="Common">Common</option>
-            <option value="Uncommon">Uncommon</option>
-            <option value="Rare">Rare</option>
-            <option value="Very Rare">Very Rare</option>
-            <option value="Legendary">Legendary</option>
-          </select>
-          <input class="form-control" type="search" id="search-input" placeholder="아이템명 검색…">
+          <select class="form-control" id="filter-rarity" style="max-width:160px;"></select>
+          <input class="form-control" type="search" id="search-input" placeholder="검색…">
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;" class="fade-in" id="items-grid"></div>
-      <div id="empty-state" class="empty-state hidden"><i class="fas fa-box-open"></i><p>아이템이 없습니다.</p></div>
+      <div id="empty-state" class="empty-state hidden"><i class="fas fa-box-open"></i><p id="empty-text">아이템이 없습니다.</p></div>
       <div class="pagination" id="pagination"></div>
     </div>
 
+    <!-- Profile View -->
     <div id="profile-view" class="hidden">
       <div style="margin-bottom:1rem;">
         <button class="btn btn-ghost btn-sm" id="back-btn"><i class="fas fa-arrow-left"></i> 목록으로</button>
@@ -56,14 +49,14 @@
             <img id="item-img" src="" alt="" style="width:100%;border-radius:var(--radius);background:var(--bg-faded);">
             <div>
               <table class="info-table">
-                <tr><td>Item</td><td id="d-item"></td></tr>
-                <tr><td>Type</td><td id="d-type"></td></tr>
-                <tr><td>Rarity</td><td id="d-rarity"></td></tr>
-                <tr><td>Price</td><td id="d-price"></td></tr>
+                <tr><td id="lbl-item">아이템</td><td id="d-item"></td></tr>
+                <tr><td id="lbl-type">유형</td><td id="d-type"></td></tr>
+                <tr><td id="lbl-rarity">등급</td><td id="d-rarity"></td></tr>
+                <tr><td id="lbl-getway">획득처</td><td id="d-getway"></td></tr>
               </table>
               <hr>
-              <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;">Description</div>
-              <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);"></div>
+              <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;" id="lbl-desc">설명</div>
+              <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);line-height:1.7;"></div>
             </div>
           </div>
         </div>
@@ -77,64 +70,195 @@
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
 
-    const ITEMS = [
-      { item: 'Gold Coin', type: 'Currency', rarity: 'Common', price: '1', description: '기본 재화 단위입니다.', image: 'https://picsum.photos/seed/i1/200/200' },
-      { item: 'Common MYO Slot', type: 'MYO Slot', rarity: 'Common', price: '10', description: '일반 MYO 슬롯입니다.', image: 'https://picsum.photos/seed/i2/200/200' },
-      { item: 'Rare MYO Slot', type: 'MYO Slot', rarity: 'Rare', price: '50', description: '레어 이하의 특성을 가진 MYO를 만들 수 있습니다.', image: 'https://picsum.photos/seed/i3/200/200' },
-      { item: 'Lucky Egg', type: 'Pet', rarity: 'Uncommon', price: '20', description: '부화시키면 귀여운 펫이 나옵니다.', image: 'https://picsum.photos/seed/i4/200/200' },
-      { item: 'Trait Potion', type: 'Trait', rarity: 'Rare', price: '30', description: '임의의 특성 하나를 추가할 수 있는 물약.', image: 'https://picsum.photos/seed/i5/200/200' },
-      { item: 'Legendary Shard', type: 'Misc', rarity: 'Legendary', price: '200', description: '전설급 아이템 제작에 사용됩니다.', image: 'https://picsum.photos/seed/i6/200/200' },
-    ];
+    const PER_PAGE = 24;
+    let ITEM_DATA = [];
+    const OPT = { itemTypes:[], rarity:{}, rarityColor:{}, rarityBack:{} };
+    let state = { filtered:[], type:'all', rarity:'all', search:'', page:1 };
 
-    const PER_PAGE = 12;
-    let state = { filtered: ITEMS, cat: 'all', rarity: 'all', search: '', page: 1 };
+    /* ---- Drive 이미지 URL 변환 ---- */
+    const driveImg = url => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([\w-]+)/);
+      return m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : url;
+    };
 
-    function filter() {
-      let arr = ITEMS;
-      if (state.cat !== 'all') arr = arr.filter(i => i.type === state.cat);
-      if (state.rarity !== 'all') arr = arr.filter(i => i.rarity === state.rarity);
-      if (state.search) { const q = state.search.toLowerCase(); arr = arr.filter(i => i.item.toLowerCase().includes(q)); }
-      state.filtered = arr; state.page = 1;
+    /* ---- 등급 뱃지 ---- */
+    function rarityBadge(val) {
+      const label = OPT.rarity[val] || val;
+      const color = OPT.rarityColor[val];
+      const bg    = OPT.rarityBack[val];
+      if (color && bg) return `<span style="display:inline-block;padding:.2rem .6rem;border-radius:100px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${color};background:${bg};border:1px solid ${color}40;">${label}</span>`;
+      return `<span class="badge">${label}</span>`;
     }
 
-    function render() {
-      const grid = document.getElementById('items-grid');
+    /* ---- 옵션 로드 ---- */
+    async function loadOptions() {
+      const subOpt = await ARPGDEX.importSheet('SubOption');
+      for (const row of subOpt) {
+        // Rarity
+        const rarVal = row['rarity'];
+        const rarSid = Number(row['raritystringid'] || 0);
+        if (rarVal && rarSid)                OPT.rarity[rarVal]      = ARPGDEX.S(rarSid) || rarVal;
+        if (rarVal && row['raritycolor'])     OPT.rarityColor[rarVal] = row['raritycolor'];
+        if (rarVal && row['raritybackcolor']) OPT.rarityBack[rarVal]  = row['raritybackcolor'];
+
+        // ItemTypes
+        const itVal = row['itemtypes'];
+        const itSid = Number(row['itemtypesstringid'] || 0);
+        if (itVal && itSid) OPT.itemTypes.push({ id: Number(row['id']), value: itVal, label: ARPGDEX.S(itSid) || itVal });
+      }
+      OPT.itemTypes.sort((a,b) => a.id - b.id);
+    }
+
+    /* ---- 데이터 로드 ---- */
+    async function loadData() {
+      await ARPGDEX.loadStrings();
+      const [rawItems] = await Promise.all([
+        ARPGDEX.importSheet('ItemList'),
+        loadOptions(),
+      ]);
+
+      ITEM_DATA = rawItems
+        .filter(r => !ARPGDEX.toBool(r['hide']) && Number(r['id']) !== 0 && r['id'] !== '')
+        .map(r => ({
+          id:          String(r['id'] || ''),
+          name:        ARPGDEX.S(Number(r['itemname'] || 0)) || r['itemname'] || '',
+          rarity:      String(r['rarity']    || ''),
+          itemtype:    String(r['itemtypes'] || ''),
+          image:       driveImg(r['image']   || ''),
+          getway:      ARPGDEX.S(Number(r['getwayid'] || 0)) || '',
+          description: ARPGDEX.S(Number(r['descriptionid'] || 0)) || '',
+        }));
+
+      applyStrings();
+      buildUI();
+
+      const profileId = ARPGDEX.getParam('profile');
+      filterData();
+      if (profileId) showProfile(profileId);
+      else renderGrid();
+    }
+
+    /* ---- 스트링 적용 ---- */
+    function applyStrings() {
+      const S = ARPGDEX.S;
+      const title = document.getElementById('page-title');
+      if (title && S(48)) title.innerHTML = S(48);
+      const map = { 'lbl-item':49, 'lbl-type':11, 'lbl-rarity':9, 'lbl-getway':56, 'lbl-desc':55 };
+      for (const [id, sid] of Object.entries(map)) {
+        const el = document.getElementById(id);
+        if (el && S(sid)) el.innerHTML = S(sid);
+      }
+      const emptyP = document.getElementById('empty-text');
+      if (emptyP && S(38)) emptyP.innerHTML = S(38);
+    }
+
+    /* ---- UI 구성 ---- */
+    function buildUI() {
+      const S  = ARPGDEX.S;
+      const all = S(36) || '전체';
+
+      const usedTypes    = new Set(ITEM_DATA.map(t => t.itemtype));
+      const usedRarities = new Set(ITEM_DATA.map(t => t.rarity));
+
+      // ItemType 탭
+      const typeTabs = document.getElementById('type-tabs');
+      typeTabs.innerHTML = `<button class="cat-tab active" data-type="all">${all}</button>`;
+      for (const it of OPT.itemTypes) {
+        if (!usedTypes.has(it.value)) continue;
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab';
+        btn.dataset.type = it.value;
+        btn.innerHTML = it.label;
+        typeTabs.appendChild(btn);
+      }
+      typeTabs.querySelectorAll('[data-type]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          typeTabs.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.type = btn.dataset.type;
+          filterData(); renderGrid();
+        });
+      });
+
+      // Rarity 셀렉트
+      const rarSel = document.getElementById('filter-rarity');
+      rarSel.innerHTML = `<option value="all">${S(9) || '등급'}: ${all}</option>`;
+      for (const [val, label] of Object.entries(OPT.rarity)) {
+        if (!usedRarities.has(val)) continue;
+        rarSel.innerHTML += `<option value="${val}">${label}</option>`;
+      }
+
+      document.getElementById('search-input').placeholder = S(37) || '검색…';
+    }
+
+    /* ---- 필터 ---- */
+    function filterData() {
+      let arr = [...ITEM_DATA];
+      if (state.type !== 'all')   arr = arr.filter(t => t.itemtype === state.type);
+      if (state.rarity !== 'all') arr = arr.filter(t => t.rarity === state.rarity);
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        arr = arr.filter(t =>
+          [t.name, t.rarity, t.itemtype, t.getway].join(' ').toLowerCase().includes(q)
+        );
+      }
+      state.filtered = arr;
+      state.page = 1;
+    }
+
+    /* ---- 그리드 렌더 ---- */
+    function renderGrid() {
+      const grid  = document.getElementById('items-grid');
       const empty = document.getElementById('empty-state');
       const { items } = ARPGDEX.paginate(state.filtered, state.page, PER_PAGE);
       if (!items.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
-      grid.innerHTML = items.map(it => `
-        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${it.item}')"
+      grid.innerHTML = items.map(t => `
+        <div class="card" style="cursor:pointer;transition:border-color .2s,transform .2s;overflow:hidden;" onclick="showProfile('${t.id}')"
           onmouseover="this.style.borderColor='var(--border-strong)';this.style.transform='translateY(-2px)'"
           onmouseout="this.style.borderColor='';this.style.transform=''">
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-            <span style="font-family:var(--font-heading);font-size:.85rem;">${it.item}</span>
-            ${ARPGDEX.rarityBadge(it.rarity)}
+            <span style="font-family:var(--font-heading);font-size:.85rem;">${t.name || '#' + t.id}</span>
+            ${rarityBadge(t.rarity)}
           </div>
           <div style="padding:1rem;display:flex;align-items:center;gap:1rem;">
-            <img src="${it.image}" alt="${it.item}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius);flex-shrink:0;">
-            <div style="font-size:.82rem;color:var(--text-secondary);line-height:1.5;">${it.description}</div>
+            ${t.image ? `<img src="${t.image}" alt="${t.name}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--radius);flex-shrink:0;">` : ''}
+            <div style="font-size:.82rem;color:var(--text-secondary);line-height:1.5;">${t.description}</div>
           </div>
         </div>`).join('');
-      ARPGDEX.renderPagination(document.getElementById('pagination'), state.page, Math.ceil(state.filtered.length/PER_PAGE), p => { state.page=p; render(); window.scrollTo(0,0); });
+      ARPGDEX.renderPagination(
+        document.getElementById('pagination'), state.page,
+        Math.ceil(state.filtered.length / PER_PAGE),
+        p => { state.page = p; renderGrid(); window.scrollTo(0,0); }
+      );
     }
 
-    window.showProfile = (name) => {
-      const it = ITEMS.find(x => x.item === name); if (!it) return;
-      history.pushState({}, '', `?profile=${encodeURIComponent(name)}`);
+    /* ---- 프로필 ---- */
+    window.showProfile = (id) => {
+      const t = ITEM_DATA.find(x => x.id === String(id));
+      if (!t) return;
+      history.pushState({}, '', `?profile=${encodeURIComponent(id)}`);
       document.getElementById('list-view').classList.add('hidden');
       document.getElementById('profile-view').classList.remove('hidden');
-      document.getElementById('profile-name').textContent = it.item;
-      document.getElementById('profile-rarity').innerHTML = ARPGDEX.rarityBadge(it.rarity);
-      document.getElementById('item-img').src = it.image;
-      document.getElementById('d-item').textContent = it.item;
-      document.getElementById('d-type').textContent = it.type;
-      document.getElementById('d-rarity').innerHTML = ARPGDEX.rarityBadge(it.rarity);
-      document.getElementById('d-price').textContent = it.price ? `$${it.price}` : 'Free';
-      document.getElementById('d-desc').textContent = it.description;
+
+      document.getElementById('profile-name').innerHTML  = t.name || '#' + t.id;
+      document.getElementById('profile-rarity').innerHTML = rarityBadge(t.rarity);
+      const img = document.getElementById('item-img');
+      img.src = t.image || '';
+      img.style.display = t.image ? '' : 'none';
+
+      document.getElementById('d-item').innerHTML   = t.name || '-';
+      document.getElementById('d-type').innerHTML   = OPT.itemTypes.find(it => it.value === t.itemtype)?.label || t.itemtype || '-';
+      document.getElementById('d-rarity').innerHTML = rarityBadge(t.rarity);
+      document.getElementById('d-getway').innerHTML = t.getway || '-';
+      document.getElementById('d-desc').innerHTML   = t.description || '-';
+
+      if (window.innerWidth < 500) document.getElementById('item-detail-grid').style.gridTemplateColumns = '1fr';
       window.scrollTo(0,0);
     };
 
+    /* ---- 이벤트 ---- */
     document.getElementById('back-btn').addEventListener('click', () => {
       history.pushState({}, '', 'items.html');
       document.getElementById('profile-view').classList.add('hidden');
@@ -145,19 +269,15 @@
       if (p) showProfile(p);
       else { document.getElementById('profile-view').classList.add('hidden'); document.getElementById('list-view').classList.remove('hidden'); }
     });
+    document.getElementById('filter-rarity').addEventListener('change', e => { state.rarity = e.target.value; filterData(); renderGrid(); });
+    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => { state.search = e.target.value; filterData(); renderGrid(); }));
 
-    document.querySelectorAll('[data-cat]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-cat]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active'); state.cat = btn.dataset.cat; filter(); render();
-      });
-    });
-    document.getElementById('filter-rarity').addEventListener('change', e => { state.rarity = e.target.value; filter(); render(); });
-    document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => { state.search = e.target.value; filter(); render(); }));
     document.addEventListener('DOMContentLoaded', () => {
-      const p = ARPGDEX.getParam('profile');
-      filter();
-      if (p) showProfile(p); else render();
+      loadData().catch(err => {
+        console.error(err);
+        document.getElementById('items-grid').innerHTML =
+          `<div style="grid-column:1/-1;" class="empty-state"><i class="fas fa-triangle-exclamation"></i><p>${ARPGDEX.S(35) || '데이터를 불러오지 못했습니다.'}</p></div>`;
+      });
     });
   </script>
 </body>
