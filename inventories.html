@@ -64,15 +64,17 @@
         <div style="padding:1.5rem 2rem;">
           <div class="tab-pane active" id="tab-inventory">
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;" id="inv-items"></div>
+            <div class="empty-state hidden" id="inv-items-empty"><i class="fas fa-box-open"></i><p></p></div>
           </div>
           <div class="tab-pane" id="tab-designs">
             <div class="gallery-grid gallery-grid-sm" id="inv-designs"></div>
+            <div class="empty-state hidden" id="inv-designs-empty"><i class="fas fa-dragon"></i><p></p></div>
           </div>
           <div class="tab-pane" id="tab-gallery">
-            <div class="empty-state"><i class="fas fa-images"></i><p>준비 중입니다.</p></div>
+            <div class="empty-state"><i class="fas fa-images"></i><p id="gallery-empty-text">-</p></div>
           </div>
           <div class="tab-pane" id="tab-logs">
-            <div class="empty-state"><i class="fas fa-scroll"></i><p>준비 중입니다.</p></div>
+            <div class="empty-state"><i class="fas fa-scroll"></i><p id="logs-empty-text">-</p></div>
           </div>
         </div>
 
@@ -115,6 +117,12 @@
       if (S(67)) document.getElementById('tab-btn-logs').innerHTML      = S(67);
       const si = document.getElementById('search-input');
       if (si && S(37)) si.placeholder = S(37);
+      if (S(38)) {
+        const ge = document.getElementById('gallery-empty-text');
+        const le = document.getElementById('logs-empty-text');
+        if (ge) ge.innerHTML = S(38);
+        if (le) le.innerHTML = S(38);
+      }
     }
 
     /* ---- 데이터 로드 ---- */
@@ -153,7 +161,7 @@
 
       // UserInventory 처리
       PLAYERS = rawUsers
-        .filter(r => !ARPGDEX.toBool(r['hide']) && r['discorduserid'])
+        .filter(r => !ARPGDEX.toBool(r['hide']) && r['discorduserid'] !== undefined && r['discorduserid'] !== '')
         .map(r => {
           const uid = String(r['discorduserid'] || '').trim();
 
@@ -233,25 +241,39 @@
         : `<span style="color:var(--text-muted);">${ARPGDEX.S(64) || '-'}</span>`;
 
       // 인벤토리
-      document.getElementById('inv-items').innerHTML = p.inventory.length
-        ? p.inventory.map(it => `
+      const invItemsEl    = document.getElementById('inv-items');
+      const invItemsEmpty = document.getElementById('inv-items-empty');
+      invItemsEmpty.querySelector('p').innerHTML = ARPGDEX.S(38) || '항목 없음';
+      if (p.inventory.length) {
+        invItemsEmpty.classList.add('hidden');
+        invItemsEl.innerHTML = p.inventory.map(it => `
             <div class="card">
               <div style="padding:.75rem;text-align:center;">
                 ${it.image ? `<img src="${it.image}" alt="${it.name}" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius);margin:0 auto .5rem;display:block;">` : ''}
                 <div style="font-size:.8rem;font-weight:600;">${it.name}</div>
                 <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">× ${it.qty.toLocaleString()}</div>
               </div>
-            </div>`).join('')
-        : `<div class="empty-state"><i class="fas fa-box-open"></i><p>${ARPGDEX.S(38) || '항목 없음'}</p></div>`;
+            </div>`).join('');
+      } else {
+        invItemsEl.innerHTML = '';
+        invItemsEmpty.classList.remove('hidden');
+      }
 
       // 보유 캐릭터
-      document.getElementById('inv-designs').innerHTML = p.designs.length
-        ? p.designs.map(d => `
+      const invDesignsEl    = document.getElementById('inv-designs');
+      const invDesignsEmpty = document.getElementById('inv-designs-empty');
+      invDesignsEmpty.querySelector('p').innerHTML = ARPGDEX.S(38) || '항목 없음';
+      if (p.designs.length) {
+        invDesignsEmpty.classList.add('hidden');
+        invDesignsEl.innerHTML = p.designs.map(d => `
             <a class="gallery-card" href="masterlist.html?profile=${encodeURIComponent(d.design)}">
               <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
               <div class="gallery-card-info"><div class="gallery-card-title">${d.design}</div></div>
-            </a>`).join('')
-        : `<div class="empty-state"><i class="fas fa-dragon"></i><p>${ARPGDEX.S(38) || '항목 없음'}</p></div>`;
+            </a>`).join('');
+      } else {
+        invDesignsEl.innerHTML = '';
+        invDesignsEmpty.classList.remove('hidden');
+      }
 
       // 탭 초기화
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
