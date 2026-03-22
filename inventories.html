@@ -131,7 +131,9 @@
 
       // 디버그: raw 확인용 (DiscordUserId 형식 확인)
       const debugUrl = `https://docs.google.com/spreadsheets/d/${ARPGDEX.sheetId}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:E3`;
-      fetch(debugUrl).then(r=>r.text()).then(t=>console.log('[ARPGDEX] UserInventory raw:', t.substring(47, 400)));
+      fetch(debugUrl).then(r=>r.text()).then(t => {
+        console.log('[ARPGDEX] UserInventory raw:', t.substring(47, 600));
+      });
 
       const [rawUsers, rawItems, rawML] = await Promise.all([
         ARPGDEX.importSheet('UserInventory'),
@@ -162,6 +164,9 @@
           image:  driveImg(row['image'] || ''),
         });
       }
+
+      console.log('[ARPGDEX] rawUsers[0]:', JSON.stringify(rawUsers[0]));
+      console.log('[ARPGDEX] rawUsers[0] discorduserid:', rawUsers[0]?.['discorduserid'], typeof rawUsers[0]?.['discorduserid']);
 
       // UserInventory 처리
       PLAYERS = rawUsers
