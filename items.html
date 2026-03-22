@@ -56,8 +56,10 @@
                 <tr id="row-price"><td id="lbl-price">구매</td><td id="d-price"></td></tr>
               </table>
               <hr id="desc-hr" style="display:none;">
+              <div id="desc-area">
               <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;" id="lbl-desc">설명</div>
               <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);line-height:1.7;"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -272,9 +274,16 @@
         priceRow.style.display = 'none';
       }
 
-      // hr은 가격 행이 있을 때만 표시
+      // hr은 가격 행이 있을 때만 표시, 없으면 설명 위 여백으로 대체
       const descHr = document.getElementById('desc-hr');
-      if (descHr) descHr.style.display = t.itemId > 0 ? '' : 'none';
+      const descArea = document.getElementById('desc-area');
+      if (t.itemId > 0) {
+        if (descHr) descHr.style.display = '';
+        if (descArea) descArea.style.marginTop = '';
+      } else {
+        if (descHr) descHr.style.display = 'none';
+        if (descArea) descArea.style.marginTop = '1.25rem';
+      }
 
       document.getElementById('d-desc').innerHTML = t.description || '';
 
