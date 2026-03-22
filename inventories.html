@@ -89,10 +89,21 @@
 
     const PER_PAGE = 24;
     let PLAYERS  = [];
-    let ITEM_MAP = {};  // { itemId: { name, image } }
-    let ML_DATA  = [];  // masterlist
+    let ITEM_MAP = {};
+    let ROLE_MAP = {};  // { roleId: { icon, iconColor, description } }
+    let ML_DATA  = [];
     let filtered = [];
     let currentUser = null;
+
+    /* ---- 역할 아이콘 HTML ---- */
+    function roleIconHTML(roleId) {
+      if (!roleId) return '';
+      const role = ROLE_MAP[String(roleId)];
+      if (!role || !role.icon) return '';
+      const color   = role.iconColor || 'var(--text-primary)';
+      const tooltip = role.description ? ` title="${role.description}"` : '';
+      return `<i class="fas fa-${role.icon}" style="font-size:.72rem;margin-right:.35rem;color:${color};"${tooltip}></i>`;
+    }
 
     /* ---- UserInventory 직접 파싱 (string 타입 셀 정확히 읽기) ---- */
     async function fetchUserInventory() {
@@ -165,11 +176,24 @@
       await ARPGDEX.loadStrings();
 
       // 디버그: raw 확인용 (DiscordUserId 형식 확인)
-      const [rawUsers, rawItems, rawML] = await Promise.all([
+      const [rawUsers, rawItems, rawML, rawRoles] = await Promise.all([
         fetchUserInventory(),
         ARPGDEX.importSheet('ItemList'),
         ARPGDEX.importSheet('MasterList'),
+        ARPGDEX.importSheet('Role'),
       ]);
+
+      // Role 맵
+      for (const row of (rawRoles || [])) {
+        const id = String(row['id'] || '').trim();
+        if (!id) continue;
+        const descSid = Number(row['descriptionid'] || 0);
+        ROLE_MAP[id] = {
+          icon:        String(row['icon']      || '').trim(),
+          iconColor:   String(row['iconcolor'] || '').trim(),
+          description: descSid ? ARPGDEX.S(descSid) : '',
+        };
+      }
 
       // ItemList 맵 { id: { name, image } }
       for (const row of rawItems) {
@@ -216,6 +240,7 @@
             discordname: String(r['discordid']   || ''),
             notice:      String(r['usernotice']  || '0'),
             intro:       String(r['note']        || '0'),
+            roleId:      String(r['role']        || '').trim(),
             inventory,
             designs:     mlByOwner[uid] || [],
           };
@@ -237,7 +262,7 @@
           onmouseover="this.style.borderColor='var(--border-strong)'" onmouseout="this.style.borderColor=''">
           <div class="card-body" style="padding:.9rem 1.1rem;">
             <div style="font-family:var(--font-heading);font-size:.9rem;">
-              <i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${p.username}
+              ${roleIconHTML(p.roleId)}${p.username}
             </div>
             <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">${p.discordname || p.uid}</div>
           </div>
@@ -254,7 +279,7 @@
       document.getElementById('profile-view').classList.remove('hidden');
 
       // 헤더
-      document.getElementById('profile-username').innerHTML  = `<i class="fas fa-user" style="font-size:.8rem;margin-right:.4rem;opacity:.7;"></i>${p.username}`;
+      document.getElementById('profile-username').innerHTML  = `${roleIconHTML(p.roleId)}${p.username}`;
       document.getElementById('profile-discordname').textContent = p.discordname || '';
       document.getElementById('profile-discordid').textContent   = p.uid;
 

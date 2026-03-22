@@ -399,9 +399,9 @@
        결과: { value: 'dog', label: '강아지' } 형태의 배열
     ============================================================= */
     // 각 탭별 옵션 맵: { [value]: label }
-    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {}, users: {}, traitTypes: [], traitMap: {} };
-    // traitTypes: [{id, value, label}] — SubOption의 TraitTypes 순서대로
-    // traitMap: { [traitId]: traitRow } — TraitList 전체
+    let OPT = { species: {}, subtype: {}, faction: {}, growth: {}, status: {}, designtype: {}, rarity: {}, rarityColor: {}, rarityBack: {}, stats: {}, levelData: {}, users: {}, traitTypes: [], traitMap: {}, roles: {} };
+    // roles: { roleId: { icon, iconColor, description } }
+    // users: { uid: { name, roleId } }
 
     async function loadOptions() {
       try {
@@ -615,7 +615,7 @@
       };
 
       // 유저 콤보박스 (Owner, Artist, Designer)
-      const userItems = Object.entries(OPT.users).map(([uid, uname]) => [uid, uname]);
+      const userItems = Object.entries(OPT.users).map(([uid, u]) => [uid, u.name]);
 
       buildCombo('adv-owner',    'adv-label-owner',    S(39)||'Owner',       userItems, v => { state.adv.owner    = v; filterData(); renderGrid(); });
       buildCombo('adv-artist',   'adv-label-artist',   S(21)||'Artist', userItems, v => { state.adv.artist   = v; filterData(); renderGrid(); });
@@ -766,17 +766,28 @@
 
 
     /* ---- 유저 ID → 이름 변환 ---- */
+    /* ---- 역할 아이콘 HTML ---- */
+    function roleIconHTML(roleId) {
+      if (!roleId) return '';
+      const role = OPT.roles[String(roleId)];
+      if (!role || !role.icon) return '';
+      const color   = role.iconColor || 'var(--text-primary)';
+      const tooltip = role.description ? ` title="${role.description}"` : '';
+      return `<i class="fas fa-${role.icon}" style="font-size:.72rem;margin-right:.35rem;color:${color};"${tooltip}></i>`;
+    }
+
+    /* ---- 유저 ID → 이름 변환 ---- */
     function userName(discordId) {
-      if (!discordId) return { text: '-', registered: false };
+      if (!discordId) return { text: '-', registered: false, roleId: '' };
       const found = OPT.users[String(discordId).trim()];
-      if (found) return { text: found, registered: true };
-      return { text: discordId, registered: false };
+      if (found) return { text: found.name, registered: true, roleId: found.roleId || '' };
+      return { text: discordId, registered: false, roleId: '' };
     }
     function userNameHTML(discordId) {
-      const { text, registered } = userName(discordId);
+      const { text, registered, roleId } = userName(discordId);
       if (!discordId || text === '-') return '-';
       return registered
-        ? `<a href="inventories.html?profile=${encodeURIComponent(discordId)}" style="color:inherit;"><i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${text}</a>`
+        ? `<a href="inventories.html?profile=${encodeURIComponent(discordId)}" style="color:inherit;">${roleIconHTML(roleId)}${text}</a>`
         : `<span style="color:var(--text-muted);">${text}</span>`;
     }
 
@@ -825,18 +836,32 @@
         typeof ARPGDEX.loadCurrency === 'function' ? ARPGDEX.loadCurrency() : Promise.resolve(),
       ]);
 
-      // 2. MasterList + 옵션 + 유저목록 병렬 로드
-      const [rawML, rawUsers] = await Promise.all([
+      // 2. MasterList + 옵션 + 유저목록 + 역할 병렬 로드
+      const [rawML, rawUsers, rawRoles] = await Promise.all([
         ARPGDEX.importSheet('MasterList'),
         ARPGDEX.importSheet('UserInventory'),
+        ARPGDEX.importSheet('Role'),
         loadOptions(),
       ]);
 
-      // 유저 맵: { discordUserId → username }
+      // Role 맵: { roleId: { icon, iconColor, description } }
+      for (const row of (rawRoles || [])) {
+        const id  = String(row['id'] || '').trim();
+        if (!id) continue;
+        const descSid = Number(row['descriptionid'] || 0);
+        OPT.roles[id] = {
+          icon:        String(row['icon']      || '').trim(),
+          iconColor:   String(row['iconcolor'] || '').trim(),
+          description: descSid ? ARPGDEX.S(descSid) : '',
+        };
+      }
+
+      // 유저 맵: { discordUserId → { name, roleId } }
       for (const row of (rawUsers || [])) {
-        const uid  = String(row['discorduserid'] || '').trim();
-        const name = String(row['username']      || '').trim();
-        if (uid && name) OPT.users[uid] = name;
+        const uid    = String(row['discorduserid'] || '').trim();
+        const name   = String(row['username']      || '').trim();
+        const roleId = String(row['role']          || '').trim();
+        if (uid && name) OPT.users[uid] = { name, roleId };
       }
 
       // ID 내림차순 정렬
