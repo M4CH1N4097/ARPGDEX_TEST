@@ -1,7 +1,7 @@
 /* ============================================================= */
 /* ARPGDEX Base — nav/footer 로드 + MenuSet 시트 연동           */
 /* ============================================================= */
-import { ARPGDEX } from './utils.js';
+import { ARPGDEX } from './utils.js?v=8';
 
 const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 
@@ -9,33 +9,8 @@ const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 export const MENU_GROUPS = [];
 export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLink: '' };
 
-/* ---- sessionStorage 헬퍼 (버전 키 + TTL 5분) --------------- */
-const CACHE_VER = 'v7';
-const CACHE_TTL = 5 * 60 * 1000; // 5분
-const cache = {
-  get: (key) => {
-    try {
-      const v = sessionStorage.getItem(CACHE_VER + key);
-      if (!v) return null;
-      const { data, ts } = JSON.parse(v);
-      if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_VER + key); return null; }
-      return data;
-    } catch(e) { return null; }
-  },
-  set: (key, val) => {
-    try { sessionStorage.setItem(CACHE_VER + key, JSON.stringify({ data: val, ts: Date.now() })); } catch(e) {}
-  },
-};
-
 /* ---- MenuSet 탭 로드 ---------------------------------------- */
 export async function loadMenu() {
-  const cached = cache.get('arpgdex_menu');
-  if (cached) {
-    MENU_GROUPS.length = 0;
-    cached.forEach(g => MENU_GROUPS.push(g));
-    return;
-  }
-
   try {
     await ARPGDEX.loadStrings();
     const rows = await ARPGDEX.importSheet('MenuSet');
@@ -70,8 +45,6 @@ export async function loadMenu() {
       });
     });
 
-    cache.set('arpgdex_menu', MENU_GROUPS);
-
   } catch(e) {
     console.warn('[ARPGDEX] MenuSet 로드 실패, nav-config 사용:', e);
     try {
@@ -87,32 +60,21 @@ export async function loadMenu() {
 
 /* ---- 사이트 설정 로드 --------------------------------------- */
 export async function loadSiteConfig() {
-  const cached = cache.get('arpgdex_siteconfig');
-  if (cached) {
-    Object.assign(SITE_CONFIG, cached);
-    return;
-  }
-
   try {
-    // 스트링이 아직 안 로드됐을 수 있으니 보장
     await ARPGDEX.loadStrings();
-
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F28:F38`;
     const text = await fetch(url).then(r => r.text());
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const rows = json?.table?.rows || [];
 
-    // F28 = rows[0] — 사이트명 StringId
     const nameSid = Number(rows[0]?.c?.[0]?.v || 0);
     if (nameSid) SITE_CONFIG.name = ARPGDEX.S(nameSid) || SITE_CONFIG.name;
 
-    // F32 = rows[4] — 디스코드 링크 (URL인 경우만)
     const discordRaw = rows[4]?.c?.[0]?.v || rows[4]?.c?.[0]?.f || '';
     if (discordRaw && (discordRaw.startsWith('http') || discordRaw.startsWith('discord'))) {
       SITE_CONFIG.discordLink = discordRaw;
     }
 
-    // F36 = rows[8] — 히어로 이미지
     const imgRaw = rows[8]?.c?.[0]?.v || rows[8]?.c?.[0]?.f || '';
     if (imgRaw) {
       const m = imgRaw.match(/\/d\/([\w-]+)/);
@@ -120,8 +82,6 @@ export async function loadSiteConfig() {
     }
 
     SITE_CONFIG.sub = ARPGDEX.S(40) || SITE_CONFIG.sub;
-
-    cache.set('arpgdex_siteconfig', SITE_CONFIG);
 
   } catch(e) {
     console.warn('[ARPGDEX] SiteConfig 로드 실패:', e);
@@ -169,27 +129,17 @@ function buildNav() {
 
 /* ---- Favicon 로드 (MainOption!F38) -------------------------- */
 async function loadFavicon() {
-  const cached = cache.get('arpgdex_favicon');
-  let faviconUrl = cached;
-
-  if (!faviconUrl) {
-    try {
-      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F38`;
-      const text = await fetch(url).then(r => r.text());
-      const json = JSON.parse(text.substring(47).slice(0, -2));
-      const rawUrl = json?.table?.rows?.[0]?.c?.[0]?.v || '';
-      if (rawUrl) {
-        const m = rawUrl.match(/\/d\/([\w-]+)/);
-        faviconUrl = m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : rawUrl;
-        cache.set('arpgdex_favicon', faviconUrl);
-      }
-    } catch(e) {}
-  }
-
-  if (faviconUrl) {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F38`;
+    const text = await fetch(url).then(r => r.text());
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const rawUrl = json?.table?.rows?.[0]?.c?.[0]?.v || '';
+    if (!rawUrl) return;
+    const m = rawUrl.match(/\/d\/([\w-]+)/);
+    const faviconUrl = m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : rawUrl;
     const link = document.querySelector("link[rel~='icon']");
     if (link) link.href = faviconUrl;
-  }
+  } catch(e) {}
 }
 
 /* ---- Includes 로드 ------------------------------------------ */
