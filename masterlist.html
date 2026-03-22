@@ -1013,10 +1013,14 @@
       document.getElementById('info-avail-paid').innerHTML   = mark(char.availPaid);
 
       // Credits / Value / Status / Notes
-      document.getElementById('info-artist').innerHTML   = userNameHTML(char.artist);
-      document.getElementById('info-artist').href        = char.artistlink;
-      document.getElementById('info-designer').innerHTML = userNameHTML(char.designer);
-      document.getElementById('info-designer').href      = char.designerlink;
+      const artistEl   = document.getElementById('info-artist');
+      const designerEl = document.getElementById('info-designer');
+      const { registered: artistReg }   = userName(char.artist);
+      const { registered: designerReg } = userName(char.designer);
+      artistEl.innerHTML  = userNameHTML(char.artist);
+      artistEl.href       = artistReg  ? `inventories.html?profile=${encodeURIComponent(char.artist)}`  : '#';
+      designerEl.innerHTML = userNameHTML(char.designer);
+      designerEl.href      = designerReg ? `inventories.html?profile=${encodeURIComponent(char.designer)}` : '#';
       document.getElementById('info-value').innerHTML = ARPGDEX.formatValue(char.value);
       document.getElementById('info-status').textContent   = optLabel(OPT.status, char.status) || '-';
       document.getElementById('info-notes').textContent    = char.notes  || '-';
