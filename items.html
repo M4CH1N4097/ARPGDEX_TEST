@@ -55,7 +55,7 @@
                 <tr><td id="lbl-getway">획득처</td><td id="d-getway"></td></tr>
                 <tr id="row-price"><td id="lbl-price">구매</td><td id="d-price"></td></tr>
               </table>
-              <hr>
+              <hr id="desc-hr" style="display:none;">
               <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;" id="lbl-desc">설명</div>
               <div id="d-desc" class="text-pre" style="font-size:.875rem;color:var(--text-secondary);line-height:1.7;"></div>
             </div>
@@ -262,16 +262,20 @@
       if (t.itemId > 0) {
         const currencyItem = ITEM_DATA.find(x => Number(x.id) === t.itemId);
         const icon = currencyItem?.image
-          ? `<img src="${currencyItem.image}" style="width:18px;height:18px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:.3rem;">`
+          ? `<img src="${currencyItem.image}" style="width:18px;height:18px;object-fit:cover;border-radius:3px;margin-right:.3rem;flex-shrink:0;">`
           : '';
         const cname = currencyItem?.name || `#${t.itemId}`;
+        priceEl.style.cssText = 'display:flex;align-items:center;';
         priceEl.innerHTML = `${icon}${cname} × ${t.itemValue.toLocaleString()}`;
         priceRow.style.display = '';
       } else {
         priceRow.style.display = 'none';
       }
 
-      document.getElementById('d-desc').innerHTML   = t.description || '-';
+      document.getElementById('d-desc').innerHTML = t.description || '';
+      // 설명 있을 때만 hr 표시
+      const descHr = document.getElementById('desc-hr');
+      if (descHr) descHr.style.display = t.description ? '' : 'none';
 
       if (window.innerWidth < 500) document.getElementById('item-detail-grid').style.gridTemplateColumns = '1fr';
       window.scrollTo(0,0);
