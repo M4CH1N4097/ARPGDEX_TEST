@@ -97,13 +97,14 @@
     /* ---- UserInventory 직접 파싱 (string 타입 셀 정확히 읽기) ---- */
     async function fetchUserInventory() {
       const id  = ARPGDEX.sheetId;
-      const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:ZZ`;
+      // range 파라미터 제거 — A2:ZZ 지정시 gviz가 일부 셀을 null로 반환하는 버그 우회
+      const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&sheet=UserInventory`;
       const text = await fetch(url).then(r => r.text());
       const raw  = text.substring(47).slice(0, -2);
-      console.log('[fetch] DiscordUserId 셀 raw 샘플:', raw.match(/"v":"[\d]+"/) || raw.match(/"c":\[.{0,200}/));
       const json = JSON.parse(raw);
 
-      const cols = json.table.cols.map((c, i) => ({
+      // 헤더: 첫 행을 컬럼명으로 사용
+      const cols = json.table.cols.map(c => ({
         key:  (c.label || '').startsWith('!') ? null : (c.label || '').toLowerCase().replace(/\s/g, ''),
         type: c.type || '',
       }));
