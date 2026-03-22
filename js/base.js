@@ -1,7 +1,7 @@
 /* ============================================================= */
 /* ARPGDEX Base — nav/footer 로드 + MenuSet 시트 연동           */
 /* ============================================================= */
-import { ARPGDEX } from './utils.js?v=8';
+import { ARPGDEX } from './utils.js';
 
 const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 
