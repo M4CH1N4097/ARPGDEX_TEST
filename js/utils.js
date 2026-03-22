@@ -27,9 +27,10 @@ ARPGDEX.importSheet = async (sheetPage, sheetId) => {
   const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheetPage)}&range=A2:ZZ`;
   try {
     const text = await fetch(url).then(r => r.text());
-    // 15자리 이상 숫자(Discord ID 등)를 JSON 파싱 전에 문자열로 보존
+    // 15자리 이상 정수 및 지수표기법(Discord ID 등)을 JSON 파싱 전에 문자열로 보존
     const safeText = text.substring(47).slice(0, -2)
-      .replace(/"v":(\d{15,})/g, '"v":"$1"');
+      .replace(/"v":(\d{15,})/g, '"v":"$1"')
+      .replace(/"v":([\d.]+e\+\d+)/g, (_, n) => `"v":"${BigInt(Math.round(Number(n))).toString()}"`);
     const json = JSON.parse(safeText);
 
     // 컬럼 헤더: !로 시작하는 것 제외, 소문자+공백제거
