@@ -43,9 +43,16 @@ ARPGDEX.importSheet = async (sheetPage, sheetId) => {
       .map(row => {
         const obj = {};
         cols.forEach((col, i) => {
-          if (!col) return; // ! 컬럼 스킵
+          if (!col) return;
           const cell = row.c[i];
-          obj[col] = cell == null ? '' : (cell.f ?? cell.v ?? '');
+          if (cell == null) { obj[col] = ''; return; }
+          const colType = json.table.cols[i]?.type || '';
+          // 문자열 타입은 v 우선 (f가 빈 경우 있음), 그 외는 f 우선 (숫자 표시형식 보존)
+          if (colType === 'string') {
+            obj[col] = cell.v != null ? String(cell.v) : (cell.f || '');
+          } else {
+            obj[col] = cell.f != null && cell.f !== '' ? cell.f : (cell.v != null ? cell.v : '');
+          }
         });
         return obj;
       })
