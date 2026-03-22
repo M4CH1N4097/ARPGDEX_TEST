@@ -129,13 +129,15 @@
     async function loadData() {
       await ARPGDEX.loadStrings();
 
-      const rawUsers = await (async () => {
-        const id = ARPGDEX.sheetId;
-        const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:ZZ`;
-        const text = await fetch(url).then(r => r.text());
-        console.log('[ARPGDEX] UserInventory raw(첫200자):', text.substring(47, 250));
-        return await ARPGDEX.importSheet('UserInventory');
-      })();
+      // 디버그: raw 확인용 (DiscordUserId 형식 확인)
+      const debugUrl = `https://docs.google.com/spreadsheets/d/${ARPGDEX.sheetId}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:E3`;
+      fetch(debugUrl).then(r=>r.text()).then(t=>console.log('[ARPGDEX] UserInventory raw:', t.substring(47, 400)));
+
+      const [rawUsers, rawItems, rawML] = await Promise.all([
+        ARPGDEX.importSheet('UserInventory'),
+        ARPGDEX.importSheet('ItemList'),
+        ARPGDEX.importSheet('MasterList'),
+      ]);
 
       // ItemList 맵 { id: { name, image } }
       for (const row of rawItems) {
@@ -160,11 +162,6 @@
           image:  driveImg(row['image'] || ''),
         });
       }
-
-      const [rawItems, rawML] = await Promise.all([
-        ARPGDEX.importSheet('ItemList'),
-        ARPGDEX.importSheet('MasterList'),
-      ]);
 
       // UserInventory 처리
       PLAYERS = rawUsers
