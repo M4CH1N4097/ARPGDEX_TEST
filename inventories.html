@@ -159,6 +159,9 @@
         });
       }
 
+      // 디버그
+      console.log('[ARPGDEX] UserInventory 전체 행:', rawUsers.map(r => ({ id: r['id'], uid: r['discorduserid'], hide: r['hide'] })));
+
       // UserInventory 처리
       PLAYERS = rawUsers
         .filter(r => !ARPGDEX.toBool(r['hide']) && r['discorduserid'] !== undefined && r['discorduserid'] !== '')
