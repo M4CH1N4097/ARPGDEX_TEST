@@ -11,30 +11,56 @@
   <div data-include="includes/header.html"></div>
   <div id="main-container">
 
+    <!-- List View -->
     <div id="list-view">
       <div class="page-header-card">
-        <h2><a href="inventories.html">Player Inventories</a></h2>
+        <h2><a href="inventories.html" id="page-title">Player Inventories</a></h2>
         <div style="margin-top:1rem;" class="filter-bar">
-          <input class="form-control" type="search" id="search-input" placeholder="플레이어 이름 검색…">
+          <input class="form-control" type="search" id="search-input" placeholder="검색…">
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.75rem;" class="fade-in" id="inv-grid"></div>
       <div class="pagination" id="pagination"></div>
     </div>
 
+    <!-- Profile View -->
     <div id="profile-view" class="hidden">
       <div style="margin-bottom:1rem;">
         <button class="btn btn-ghost btn-sm" id="back-btn"><i class="fas fa-arrow-left"></i> 목록으로</button>
       </div>
       <div class="card fade-in">
-        <div class="card-header"><h2 id="profile-username" style="font-size:1.3rem;text-transform:capitalize;"></h2></div>
-        <div style="padding:0;">
-          <div class="tab-nav">
-            <button class="tab-btn active" data-tab="inventory">인벤토리</button>
-            <button class="tab-btn" data-tab="designs">보유 디자인</button>
-            <button class="tab-btn" data-tab="logs">거래 기록</button>
+
+        <!-- 헤더: 닉네임 | 디스코드명 | ID -->
+        <div class="card-header" style="padding:1.5rem 2rem;">
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;">
+            <h2 id="profile-username" style="font-size:1.3rem;margin:0;"></h2>
+            <span style="color:var(--text-muted);">|</span>
+            <span id="profile-discordname" style="font-size:.95rem;color:var(--text-secondary);"></span>
+            <span style="color:var(--text-muted);">|</span>
+            <span id="profile-discordid" style="font-size:.82rem;color:var(--text-muted);font-family:monospace;"></span>
+          </div>
+          <!-- 개인공지 -->
+          <div style="margin-top:.5rem;font-size:.82rem;">
+            <span style="font-weight:700;color:var(--text-muted);margin-right:.4rem;" id="lbl-notice">개인공지</span>
+            <span id="profile-notice" style="color:var(--text-secondary);"></span>
+          </div>
+          <!-- 한줄소개 -->
+          <div style="margin-top:.3rem;font-size:.82rem;">
+            <span style="font-weight:700;color:var(--text-muted);margin-right:.4rem;" id="lbl-intro">한줄소개</span>
+            <span id="profile-intro" style="color:var(--text-secondary);"></span>
           </div>
         </div>
+
+        <!-- 탭 -->
+        <div style="padding:0;">
+          <div class="tab-nav">
+            <button class="tab-btn active" data-tab="inventory" id="tab-btn-inventory">인벤토리</button>
+            <button class="tab-btn" data-tab="designs" id="tab-btn-designs">보유 캐릭터</button>
+            <button class="tab-btn" data-tab="gallery" id="tab-btn-gallery">갤러리</button>
+            <button class="tab-btn" data-tab="logs" id="tab-btn-logs">아이템 기록</button>
+          </div>
+        </div>
+
         <div style="padding:1.5rem 2rem;">
           <div class="tab-pane active" id="tab-inventory">
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;" id="inv-items"></div>
@@ -42,10 +68,14 @@
           <div class="tab-pane" id="tab-designs">
             <div class="gallery-grid gallery-grid-sm" id="inv-designs"></div>
           </div>
+          <div class="tab-pane" id="tab-gallery">
+            <div class="empty-state"><i class="fas fa-images"></i><p>준비 중입니다.</p></div>
+          </div>
           <div class="tab-pane" id="tab-logs">
-            <div id="inv-log-list"></div>
+            <div class="empty-state"><i class="fas fa-scroll"></i><p>준비 중입니다.</p></div>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -54,52 +84,184 @@
   <script src="js/base.js" type="module"></script>
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
-    const PLAYERS = [
-      { username: 'Alice', discordId: 'alice_discord', items: [{name:'Gold Coin',qty:150,image:'https://picsum.photos/seed/i1/200/200'},{name:'Lucky Egg',qty:2,image:'https://picsum.photos/seed/i4/200/200'}], designs: ['CHA-001'], logs: [{timestamp:'2024-03-01',reason:'Gold Coin +50 (Event)'}] },
-      { username: 'Bob',   discordId: 'bob_discord',   items: [{name:'Common MYO Slot',qty:1,image:'https://picsum.photos/seed/i2/200/200'}], designs: ['CHA-002'], logs: [{timestamp:'2024-02-15',reason:'MYO Slot +1 (Purchase)'}] },
-      { username: 'Carol', discordId: 'carol_discord', items: [{name:'Trait Potion',qty:3,image:'https://picsum.photos/seed/i5/200/200'}], designs: ['CHA-003'], logs: [] },
-      { username: 'Dave',  discordId: '',              items: [], designs: ['CHA-004'], logs: [] },
-    ];
-    const ML = { 'CHA-001': 'https://picsum.photos/seed/c1/200/200', 'CHA-002': 'https://picsum.photos/seed/c2/200/200', 'CHA-003': 'https://picsum.photos/seed/c3/200/200', 'CHA-004': 'https://picsum.photos/seed/c4/200/200' };
 
-    let filtered = PLAYERS;
+    const PER_PAGE = 24;
+    let PLAYERS  = [];
+    let ITEM_MAP = {};  // { itemId: { name, image } }
+    let ML_DATA  = [];  // masterlist
+    let filtered = [];
+    let currentUser = null;
+
+    /* ---- Drive 이미지 URL 변환 ---- */
+    const driveImg = url => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([\w-]+)/);
+      return m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : url;
+    };
+
+    /* ---- URL 판별 ---- */
+    const isUrl = str => /^https?:\/\//i.test(str);
+
+    /* ---- 스트링 적용 ---- */
+    function applyStrings() {
+      const S = ARPGDEX.S;
+      const title = document.getElementById('page-title');
+      if (title && S(48)) title.innerHTML = S(48);
+      if (S(60)) document.getElementById('lbl-notice').innerHTML = S(60);
+      if (S(61)) document.getElementById('lbl-intro').innerHTML  = S(61);
+      if (S(64)) document.getElementById('tab-btn-inventory').innerHTML = S(64);
+      if (S(65)) document.getElementById('tab-btn-designs').innerHTML   = S(65);
+      if (S(66)) document.getElementById('tab-btn-gallery').innerHTML   = S(66);
+      if (S(67)) document.getElementById('tab-btn-logs').innerHTML      = S(67);
+      const si = document.getElementById('search-input');
+      if (si && S(37)) si.placeholder = S(37);
+    }
+
+    /* ---- 데이터 로드 ---- */
+    async function loadData() {
+      await ARPGDEX.loadStrings();
+
+      const [rawUsers, rawItems, rawML] = await Promise.all([
+        ARPGDEX.importSheet('UserInventory'),
+        ARPGDEX.importSheet('ItemList'),
+        ARPGDEX.importSheet('MasterList'),
+      ]);
+
+      // ItemList 맵 { id: { name, image } }
+      for (const row of rawItems) {
+        const id = String(row['id'] || '').trim();
+        if (!id || id === '0') continue;
+        const nameSid = Number(row['itemname'] || 0);
+        ITEM_MAP[id] = {
+          name:  ARPGDEX.S(nameSid) || row['itemname'] || id,
+          image: driveImg(row['image'] || ''),
+        };
+      }
+
+      // MasterList 맵 { owner: [designs...] }
+      const mlByOwner = {};
+      for (const row of rawML) {
+        if (ARPGDEX.toBool(row['hide'])) continue;
+        const owner = String(row['owner'] || '').trim();
+        if (!owner) continue;
+        if (!mlByOwner[owner]) mlByOwner[owner] = [];
+        mlByOwner[owner].push({
+          design: row['charaindex'] || '',
+          image:  driveImg(row['image'] || ''),
+        });
+      }
+
+      // UserInventory 처리
+      PLAYERS = rawUsers
+        .filter(r => !ARPGDEX.toBool(r['hide']) && r['discorduserid'])
+        .map(r => {
+          const uid = String(r['discorduserid'] || '').trim();
+
+          // 아이템 인벤토리: 컬럼명이 숫자인 것들 (ItemList ID와 매칭)
+          const inventory = [];
+          for (const key of Object.keys(r)) {
+            if (/^\d+$/.test(key) && ITEM_MAP[key]) {
+              const qty = Number(r[key] || 0);
+              if (qty > 0) inventory.push({ id: key, qty, ...ITEM_MAP[key] });
+            }
+          }
+
+          return {
+            uid,
+            username:    String(r['username']    || uid),
+            discordname: String(r['discordid']   || ''),
+            notice:      String(r['usernotice']  || '0'),
+            intro:       String(r['note']        || '0'),
+            inventory,
+            designs:     mlByOwner[uid] || [],
+          };
+        });
+
+      filtered = [...PLAYERS];
+      applyStrings();
+
+      const profileId = ARPGDEX.getParam('profile');
+      if (profileId) showProfile(profileId);
+      else renderList();
+    }
+
+    /* ---- 유저 리스트 렌더 ---- */
     function renderList() {
-      document.getElementById('inv-grid').innerHTML = filtered.map(p => `
-        <div class="card" style="cursor:pointer;transition:border-color .2s;" onclick="showProfile('${p.username}')"
+      const { items, total } = ARPGDEX.paginate(filtered, 1, PER_PAGE);
+      document.getElementById('inv-grid').innerHTML = items.map(p => `
+        <div class="card" style="cursor:pointer;transition:border-color .2s;" onclick="showProfile('${p.uid}')"
           onmouseover="this.style.borderColor='var(--border-strong)'" onmouseout="this.style.borderColor=''">
           <div class="card-body" style="padding:.9rem 1.1rem;">
             <div style="font-family:var(--font-heading);font-size:.9rem;">
               <i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${p.username}
             </div>
-            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">${p.discordId || ''}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">${p.discordname || p.uid}</div>
           </div>
         </div>`).join('');
     }
-    window.showProfile = (name) => {
-      const p = PLAYERS.find(x => x.username === name); if (!p) return;
-      history.pushState({}, '', `?profile=${name}`);
+
+    /* ---- 프로필 렌더 ---- */
+    window.showProfile = (uid) => {
+      const p = PLAYERS.find(x => x.uid === uid);
+      if (!p) return;
+      currentUser = p;
+      history.pushState({}, '', `?profile=${encodeURIComponent(uid)}`);
       document.getElementById('list-view').classList.add('hidden');
       document.getElementById('profile-view').classList.remove('hidden');
-      document.getElementById('profile-username').textContent = p.username;
-      // Items
-      document.getElementById('inv-items').innerHTML = p.items.length
-        ? p.items.map(it => `<div class="card"><div class="card-body" style="padding:.75rem;text-align:center;"><img src="${it.image}" alt="${it.name}" style="width:60px;height:60px;border-radius:var(--radius);margin:0 auto .5rem;"><div style="font-size:.8rem;font-weight:600;">${it.name}</div><div style="font-size:.75rem;color:var(--text-muted);">x${it.qty}</div></div></div>`).join('')
-        : '<div class="empty-state"><i class="fas fa-box-open"></i><p>아이템 없음</p></div>';
-      // Designs
+
+      // 헤더
+      document.getElementById('profile-username').innerHTML  = `<i class="fas fa-user" style="font-size:.8rem;margin-right:.4rem;opacity:.7;"></i>${p.username}`;
+      document.getElementById('profile-discordname').textContent = p.discordname || '';
+      document.getElementById('profile-discordid').textContent   = p.uid;
+
+      // 개인공지
+      const noticeEl = document.getElementById('profile-notice');
+      const notice   = p.notice && p.notice !== '0' ? p.notice : '';
+      if (notice) {
+        noticeEl.innerHTML = isUrl(notice)
+          ? `<a href="${notice}" target="_blank" rel="noopener">${notice}</a>`
+          : notice;
+      } else {
+        noticeEl.innerHTML = `<span style="color:var(--text-muted);">${ARPGDEX.S(63) || '-'}</span>`;
+      }
+
+      // 한줄소개
+      const introEl = document.getElementById('profile-intro');
+      const intro   = p.intro && p.intro !== '0' ? p.intro : '';
+      introEl.innerHTML = intro
+        ? intro
+        : `<span style="color:var(--text-muted);">${ARPGDEX.S(64) || '-'}</span>`;
+
+      // 인벤토리
+      document.getElementById('inv-items').innerHTML = p.inventory.length
+        ? p.inventory.map(it => `
+            <div class="card">
+              <div style="padding:.75rem;text-align:center;">
+                ${it.image ? `<img src="${it.image}" alt="${it.name}" style="width:60px;height:60px;object-fit:cover;border-radius:var(--radius);margin:0 auto .5rem;display:block;">` : ''}
+                <div style="font-size:.8rem;font-weight:600;">${it.name}</div>
+                <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">× ${it.qty.toLocaleString()}</div>
+              </div>
+            </div>`).join('')
+        : `<div class="empty-state"><i class="fas fa-box-open"></i><p>${ARPGDEX.S(38) || '항목 없음'}</p></div>`;
+
+      // 보유 캐릭터
       document.getElementById('inv-designs').innerHTML = p.designs.length
-        ? p.designs.map(id => `<a class="gallery-card" href="masterlist.html?profile=${id}"><div class="gallery-card-img"><img src="${ML[id]||''}" alt="${id}" loading="lazy"></div><div class="gallery-card-info"><div class="gallery-card-title">${id}</div></div></a>`).join('')
-        : '<div class="empty-state"><i class="fas fa-dragon"></i><p>보유 디자인 없음</p></div>';
-      // Logs
-      document.getElementById('inv-log-list').innerHTML = p.logs.length
-        ? p.logs.map(l => `<div class="log-row"><span class="log-time">${l.timestamp}</span><span>${l.reason}</span></div>`).join('')
-        : '<div class="empty-state"><i class="fas fa-scroll"></i><p>거래 기록 없음</p></div>';
-      // Tabs
+        ? p.designs.map(d => `
+            <a class="gallery-card" href="masterlist.html?profile=${encodeURIComponent(d.design)}">
+              <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
+              <div class="gallery-card-info"><div class="gallery-card-title">${d.design}</div></div>
+            </a>`).join('')
+        : `<div class="empty-state"><i class="fas fa-dragon"></i><p>${ARPGDEX.S(38) || '항목 없음'}</p></div>`;
+
+      // 탭 초기화
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(pn => pn.classList.remove('active'));
       document.querySelector('.tab-btn[data-tab="inventory"]').classList.add('active');
       document.getElementById('tab-inventory').classList.add('active');
       window.scrollTo(0,0);
     };
+
+    /* ---- 이벤트 ---- */
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -120,12 +282,14 @@
     });
     document.getElementById('search-input').addEventListener('input', ARPGDEX.debounce(e => {
       const q = e.target.value.toLowerCase();
-      filtered = q ? PLAYERS.filter(p => p.username.toLowerCase().includes(q)) : PLAYERS;
+      filtered = q ? PLAYERS.filter(p => (p.username + p.discordname + p.uid).toLowerCase().includes(q)) : [...PLAYERS];
       renderList();
     }));
+
     document.addEventListener('DOMContentLoaded', () => {
-      const p = ARPGDEX.getParam('profile');
-      if (p) showProfile(p); else renderList();
+      loadData().catch(err => {
+        console.error('[ARPGDEX] 인벤토리 로드 실패:', err);
+      });
     });
   </script>
 </body>
