@@ -144,10 +144,14 @@ async function loadFavicon() {
 
 /* ---- Includes 로드 ------------------------------------------ */
 async function loadIncludes() {
+  // nav 교체 전 placeholder 숨기기
   document.querySelectorAll('[data-include="includes/header.html"]').forEach(el => {
+    el.style.visibility = 'hidden';
     const div = document.createElement('div');
     div.innerHTML = buildNav();
-    el.replaceWith(div.firstElementChild);
+    const nav = div.firstElementChild;
+    nav.style.visibility = 'visible';
+    el.replaceWith(nav);
   });
 
   for (const el of document.querySelectorAll('[data-include="includes/footer.html"]')) {
