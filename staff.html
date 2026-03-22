@@ -30,9 +30,34 @@
     let STAFF = [];
     let filtered = [];
 
+    let ROLE_MAP = {};
+
+    function roleIconHTML(roleId) {
+      if (!roleId) return '';
+      const role = ROLE_MAP[String(roleId)];
+      if (!role || !role.icon) return '';
+      const color = role.iconColor || 'var(--text-primary)';
+      const tip   = role.description ? ` class="arpg-tooltip" data-tip="${role.description}"` : '';
+      return `<span${tip} style="display:inline-flex;align-items:center;margin-right:.35rem;"><i class="fas fa-${role.icon}" style="font-size:.85rem;color:${color};"></i></span>`;
+    }
+
     async function loadData() {
       await ARPGDEX.loadStrings();
-      const rows = await ARPGDEX.importSheet('Staff');
+      const [rows, rawRoles] = await Promise.all([
+        ARPGDEX.importSheet('Staff'),
+        ARPGDEX.importSheet('Role'),
+      ]);
+
+      for (const row of (rawRoles || [])) {
+        const id = String(row['id'] || '').trim();
+        if (!id) continue;
+        const descSid = Number(row['descriptionid'] || 0);
+        ROLE_MAP[id] = {
+          icon:        String(row['icon']      || '').trim(),
+          iconColor:   String(row['iconcolor'] || '').trim(),
+          description: descSid ? ARPGDEX.S(descSid) : '',
+        };
+      }
 
       STAFF = rows
         .filter(r => !ARPGDEX.toBool(r['hide']))
@@ -40,6 +65,7 @@
           uid:         String(r['discorduserid'] || '').trim(),
           discordId:   String(r['discordid']     || '').trim(),
           username:    String(r['username']       || '').trim(),
+          roleId:      String(r['role']          || '').trim(),
           information: String(r['information']    || '').trim(),
           avatar:      driveImg(r['avatar']       || ''),
         }))
@@ -66,7 +92,7 @@
               : `<div style="width:72px;height:72px;border-radius:50%;background:var(--bg-raised);border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="font-size:1.5rem;color:var(--text-muted);"></i></div>`
             }
             <div style="min-width:0;">
-              <div style="font-family:var(--font-heading);font-size:1rem;font-weight:700;">${s.username}</div>
+              <div style="font-family:var(--font-heading);font-size:1rem;font-weight:700;display:flex;align-items:center;">${roleIconHTML(s.roleId)}${s.username}</div>
               ${s.discordId ? `<div style="font-size:.82rem;color:var(--text-secondary);margin-top:.15rem;">${s.discordId}</div>` : ''}
               ${s.uid ? `<div style="font-size:.72rem;color:var(--text-muted);margin-top:.1rem;font-family:monospace;">${s.uid}</div>` : ''}
             </div>

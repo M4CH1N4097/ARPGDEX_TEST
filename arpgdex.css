@@ -854,18 +854,10 @@ select.form-control option { background: var(--bg-raised); }
 }
 .link-list a:hover { color: var(--primary); border-color: var(--border-strong); background: rgba(200,169,110,0.06); }
 
-/* Tooltip */
-.arpg-tooltip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.arpg-tooltip::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 5px);
-  left: 50%;
-  transform: translateX(-50%);
+/* Tooltip — JS 방식으로 overflow 탈출 (아래 JS tooltip 코드와 연동) */
+.arpg-tooltip { position: relative; display: inline-flex; align-items: center; cursor: default; }
+#arpg-tooltip-box {
+  position: fixed;
   background: var(--bg-raised);
   border: 1px solid var(--border-strong);
   color: var(--text-primary);
@@ -875,12 +867,12 @@ select.form-control option { background: var(--bg-raised); }
   border-radius: var(--radius);
   white-space: nowrap;
   pointer-events: none;
+  z-index: 9999;
   opacity: 0;
   transition: opacity .15s;
-  z-index: 9999;
   font-family: var(--font-body);
 }
-.arpg-tooltip:hover::after { opacity: 1; }
+#arpg-tooltip-box.visible { opacity: 1; }
 
 /* Scrollbar global */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

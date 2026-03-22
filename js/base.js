@@ -181,4 +181,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (SITE_CONFIG.name) {
     document.title = document.title.replace('ARPGDEX', SITE_CONFIG.name);
   }
+
+  // 글로벌 툴팁 (overflow:hidden 탈출용 fixed 방식)
+  const box = document.createElement('div');
+  box.id = 'arpg-tooltip-box';
+  document.body.appendChild(box);
+
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest('.arpg-tooltip');
+    if (!el) return;
+    const tip = el.dataset.tip;
+    if (!tip) return;
+    box.textContent = tip;
+    box.classList.add('visible');
+  });
+  document.addEventListener('mousemove', e => {
+    if (!box.classList.contains('visible')) return;
+    box.style.left = (e.clientX + 12) + 'px';
+    box.style.top  = (e.clientY - 28) + 'px';
+  });
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest('.arpg-tooltip')) box.classList.remove('visible');
+  });
 });
