@@ -94,7 +94,38 @@
     let filtered = [];
     let currentUser = null;
 
-    /* ---- Drive 이미지 URL 변환 ---- */
+    /* ---- UserInventory 직접 파싱 (string 타입 셀 정확히 읽기) ---- */
+    async function fetchUserInventory() {
+      const id  = ARPGDEX.sheetId;
+      const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:ZZ`;
+      const text = await fetch(url).then(r => r.text());
+      const json = JSON.parse(text.substring(47).slice(0, -2));
+
+      const cols = json.table.cols.map((c, i) => ({
+        key:  (c.label || '').startsWith('!') ? null : (c.label || '').toLowerCase().replace(/\s/g, ''),
+        type: c.type || '',
+      }));
+
+      return json.table.rows.map(row => {
+        const obj = {};
+        cols.forEach(({ key, type }, i) => {
+          if (!key) return;
+          const cell = row.c?.[i];
+          if (!cell) { obj[key] = ''; return; }
+          // string 타입은 v 우선 (f가 없거나 빈 경우 많음)
+          if (type === 'string') {
+            obj[key] = cell.v != null && cell.v !== '' ? String(cell.v) : (cell.f || '');
+          } else {
+            obj[key] = cell.f != null && cell.f !== '' ? String(cell.f) : (cell.v != null ? String(cell.v) : '');
+          }
+        });
+        return obj;
+      }).filter(r => {
+        const h = r['hide'];
+        if (h !== undefined && String(h).toUpperCase() === 'TRUE') return false;
+        return Object.values(r).some(v => v !== '');
+      });
+    }
     const driveImg = url => {
       if (!url) return '';
       const m = url.match(/\/d\/([\w-]+)/);
@@ -130,13 +161,8 @@
       await ARPGDEX.loadStrings();
 
       // 디버그: raw 확인용 (DiscordUserId 형식 확인)
-      const debugUrl = `https://docs.google.com/spreadsheets/d/${ARPGDEX.sheetId}/gviz/tq?tqx=out:json&headers=1&sheet=UserInventory&range=A2:E3`;
-      fetch(debugUrl).then(r=>r.text()).then(t => {
-        console.log('[ARPGDEX] UserInventory raw:', t.substring(47, 600));
-      });
-
       const [rawUsers, rawItems, rawML] = await Promise.all([
-        ARPGDEX.importSheet('UserInventory'),
+        fetchUserInventory(),
         ARPGDEX.importSheet('ItemList'),
         ARPGDEX.importSheet('MasterList'),
       ]);
@@ -164,9 +190,6 @@
           image:  driveImg(row['image'] || ''),
         });
       }
-
-      console.log('[ARPGDEX] rawUsers[0]:', JSON.stringify(rawUsers[0]));
-      console.log('[ARPGDEX] rawUsers[0] discorduserid:', rawUsers[0]?.['discorduserid'], typeof rawUsers[0]?.['discorduserid']);
 
       // UserInventory 처리
       PLAYERS = rawUsers
