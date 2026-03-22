@@ -53,6 +53,7 @@
                 <tr><td id="lbl-type">유형</td><td id="d-type"></td></tr>
                 <tr><td id="lbl-rarity">등급</td><td id="d-rarity"></td></tr>
                 <tr><td id="lbl-getway">획득처</td><td id="d-getway"></td></tr>
+                <tr id="row-price"><td id="lbl-price">구매</td><td id="d-price"></td></tr>
               </table>
               <hr>
               <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.5rem;" id="lbl-desc">설명</div>
@@ -128,6 +129,8 @@
           image:       driveImg(r['image']   || ''),
           getway:      ARPGDEX.S(Number(r['getwayid'] || 0)) || '',
           description: ARPGDEX.S(Number(r['descriptionid'] || 0)) || '',
+          itemId:      Number(r['itemid']    || 0),
+          itemValue:   Number(r['itemvalue'] || 0),
         }));
 
       applyStrings();
@@ -144,7 +147,7 @@
       const S = ARPGDEX.S;
       const title = document.getElementById('page-title');
       if (title && S(47)) title.innerHTML = S(47);
-      const map = { 'lbl-item':57, 'lbl-type':11, 'lbl-rarity':9, 'lbl-getway':56, 'lbl-desc':55 };
+      const map = { 'lbl-item':57, 'lbl-type':11, 'lbl-rarity':9, 'lbl-getway':56, 'lbl-price':58, 'lbl-desc':55 };
       for (const [id, sid] of Object.entries(map)) {
         const el = document.getElementById(id);
         if (el && S(sid)) el.innerHTML = S(sid);
@@ -252,6 +255,22 @@
       document.getElementById('d-type').innerHTML   = OPT.itemTypes.find(it => it.value === t.itemtype)?.label || t.itemtype || '-';
       document.getElementById('d-rarity').innerHTML = rarityBadge(t.rarity);
       document.getElementById('d-getway').innerHTML = t.getway || '-';
+
+      // 구매 가격 (ItemId > 0일 때만 표기)
+      const priceRow = document.getElementById('row-price');
+      const priceEl  = document.getElementById('d-price');
+      if (t.itemId > 0) {
+        const currencyItem = ITEM_DATA.find(x => Number(x.id) === t.itemId);
+        const icon = currencyItem?.image
+          ? `<img src="${currencyItem.image}" style="width:18px;height:18px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:.3rem;">`
+          : '';
+        const cname = currencyItem?.name || `#${t.itemId}`;
+        priceEl.innerHTML = `${icon}${cname} × ${t.itemValue.toLocaleString()}`;
+        priceRow.style.display = '';
+      } else {
+        priceRow.style.display = 'none';
+      }
+
       document.getElementById('d-desc').innerHTML   = t.description || '-';
 
       if (window.innerWidth < 500) document.getElementById('item-detail-grid').style.gridTemplateColumns = '1fr';
