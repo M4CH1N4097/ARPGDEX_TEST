@@ -272,10 +272,11 @@
         priceRow.style.display = 'none';
       }
 
-      document.getElementById('d-desc').innerHTML = t.description || '';
-      // 설명 있을 때만 hr 표시
+      // hr은 가격 행이 있을 때만 표시
       const descHr = document.getElementById('desc-hr');
-      if (descHr) descHr.style.display = t.description ? '' : 'none';
+      if (descHr) descHr.style.display = t.itemId > 0 ? '' : 'none';
+
+      document.getElementById('d-desc').innerHTML = t.description || '';
 
       if (window.innerWidth < 500) document.getElementById('item-detail-grid').style.gridTemplateColumns = '1fr';
       window.scrollTo(0,0);
