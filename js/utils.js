@@ -24,7 +24,7 @@ ARPGDEX.pageUrl = (page) => {
 */
 ARPGDEX.importSheet = async (sheetPage, sheetId) => {
   const id = sheetId || ARPGDEX.sheetId;
-  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheetPage)}&range=A3:ZZ`;
+  const url = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheetPage)}&range=A2:ZZ`;
   try {
     const text = await fetch(url).then(r => r.text());
     // 15자리 이상 정수 및 지수표기법(Discord ID 등)을 JSON 파싱 전에 문자열로 보존
