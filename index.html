@@ -30,7 +30,7 @@
         <!-- Left: Representative Image -->
         <div style="display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem 2rem;order:1;">
           <div id="hero-image-wrap" style="width:100%;max-height:280px;display:flex;align-items:center;justify-content:center;">
-            <div id="hero-image-skeleton" style="width:100%;height:240px;border-radius:var(--radius-lg);background:linear-gradient(90deg,var(--bg-raised) 25%,var(--bg-faded) 50%,var(--bg-raised) 75%);background-size:200% 100%;animation:skeleton-shimmer 1.4s infinite;"></div>
+            <div id="hero-image-skeleton" style="width:100%;height:240px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;background:var(--bg-raised);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;color:var(--text-muted);"></i></div>
             <img id="hero-image" src="" alt="대표 이미지"
                  style="display:none;max-width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius-lg);opacity:.9;"
                  onload="this.style.display='';document.getElementById('hero-image-skeleton').style.display='none';">
@@ -58,7 +58,7 @@
 
       <div class="section-card" id="recent-designs-section">
         <div class="section-card-header">
-          <h3><a href="masterlist.html">Recent Designs</a></h3>
+          <h3><a href="masterlist.html" id="lbl-recent-designs">Recent Designs</a></h3>
           <a href="masterlist.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;" id="recent-designs"></div>
@@ -66,7 +66,7 @@
 
       <div class="section-card" id="recent-gallery-section">
         <div class="section-card-header">
-          <h3><a href="gallery.html">Recent Gallery</a></h3>
+          <h3><a href="gallery.html" id="lbl-recent-gallery">Recent Gallery</a></h3>
           <a href="gallery.html" class="btn btn-ghost btn-sm">View All <i class="fas fa-arrow-right"></i></a>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.6rem;" id="recent-gallery"></div>
@@ -83,18 +83,17 @@
     import { ARPGDEX } from './js/utils.js';
     import { MENU_GROUPS, loadMenu, loadSiteConfig, SITE_CONFIG } from './js/base.js';
 
-    const mockDesigns = [
-      { design: 'CHA-001', image: 'https://picsum.photos/seed/c1/200/200', owner: 'Alice' },
-      { design: 'CHA-002', image: 'https://picsum.photos/seed/c2/200/200', owner: 'Bob' },
-      { design: 'CHA-003', image: 'https://picsum.photos/seed/c3/200/200', owner: 'Carol' },
-      { design: 'CHA-004', image: 'https://picsum.photos/seed/c4/200/200', owner: 'Dave' },
-    ];
-
     const mockGallery = [
       { id: 'G-001', title: '봄날의 소풍', author: 'Alice', category: '일반', thumb: 'https://picsum.photos/seed/g1/400/225' },
       { id: 'G-002', title: '프롬프트: 달빛 아래서', author: 'Bob', category: '프롬프트', thumb: 'https://picsum.photos/seed/g2/400/225' },
       { id: 'G-003', title: '모험의 시작', author: 'Carol', category: '일반', thumb: 'https://picsum.photos/seed/g3/400/225' },
     ];
+
+    const driveImg = url => {
+      if (!url) return '';
+      const m = url.match(/\/d\/([\w-]+)/);
+      return m ? `https://drive.google.com/uc?id=${m[1]}&export=view` : url;
+    };
 
     document.addEventListener('DOMContentLoaded', async () => {
 
@@ -152,16 +151,69 @@
         .then(html => { document.getElementById('hero-desc').innerHTML = html; })
         .catch(() => { document.getElementById('hero-desc').textContent = '소개 글을 불러오지 못했습니다.'; });
 
-      // Designs
+      // 스트링 라벨
+      const lblDesigns = document.getElementById('lbl-recent-designs');
+      if (lblDesigns && ARPGDEX.S(68)) lblDesigns.innerHTML = ARPGDEX.S(68);
+      const lblGallery = document.getElementById('lbl-recent-gallery');
+      if (lblGallery && ARPGDEX.S(69)) lblGallery.innerHTML = ARPGDEX.S(69);
+
+      // Recent Designs — MasterList에서 최신 4개
       const designGrid = document.getElementById('recent-designs');
-      designGrid.innerHTML = mockDesigns.map(d => `
-        <a class="gallery-card" href="masterlist.html?profile=${encodeURIComponent(d.design)}">
-          <div class="gallery-card-img"><img src="${d.image}" alt="${d.design}" loading="lazy"></div>
-          <div class="gallery-card-info">
-            <div class="gallery-card-title">${d.design}</div>
-            <div class="gallery-card-sub">${d.owner}</div>
-          </div>
-        </a>`).join('');
+      try {
+        const [rawML, rawUsers, rawRoles] = await Promise.all([
+          ARPGDEX.importSheet('MasterList'),
+          ARPGDEX.importSheet('UserInventory'),
+          ARPGDEX.importSheet('Role'),
+        ]);
+
+        // Role 맵
+        const roleMap = {};
+        for (const row of rawRoles) {
+          const id = String(row['id'] || '').trim();
+          if (!id) continue;
+          roleMap[id] = {
+            icon:      String(row['icon']      || '').trim(),
+            iconColor: String(row['iconcolor'] || '').trim(),
+          };
+        }
+
+        // 유저 맵 { uid → { name, roleId } }
+        const userMap = {};
+        for (const row of rawUsers) {
+          const uid = String(row['discorduserid'] || '').trim();
+          if (uid) userMap[uid] = { name: String(row['username'] || uid), roleId: String(row['role'] || '').trim() };
+        }
+
+        // ID 내림차순 정렬 후 4개
+        const recent = rawML
+          .filter(r => !ARPGDEX.toBool(r['hide']) && r['id'] && Number(r['id']) !== 0 && r['charaindex'])
+          .sort((a, b) => Number(b['id']) - Number(a['id']))
+          .slice(0, 4);
+
+        designGrid.innerHTML = recent.map(d => {
+          const uid    = String(d['owner'] || '').trim();
+          const user   = userMap[uid];
+          const uname  = user ? user.name : (uid || '-');
+          const roleId = user ? user.roleId : '';
+          const role   = roleId ? roleMap[roleId] : null;
+          const iconHTML = role?.icon
+            ? `<i class="fas fa-${role.icon}" style="font-size:.65rem;margin-right:.25rem;color:${role.iconColor || 'var(--text-primary)'}"></i>`
+            : '';
+          const img = driveImg(d['image'] || '');
+          const design = d['charaindex'] || '';
+          const charaname = d['charaname'] || '';
+          return `
+            <a class="gallery-card" href="masterlist.html?profile=${encodeURIComponent(design)}">
+              <div class="gallery-card-img"><img src="${img}" alt="${design}" loading="lazy" onerror="this.style.opacity='.3'"></div>
+              <div class="gallery-card-info">
+                <div class="gallery-card-title">${design}${charaname ? ' · ' + charaname : ''}</div>
+                <div class="gallery-card-sub">${iconHTML}${uname}</div>
+              </div>
+            </a>`;
+        }).join('');
+      } catch(e) {
+        designGrid.innerHTML = '';
+      }
 
       // Gallery
       const galleryGrid = document.getElementById('recent-gallery');
