@@ -143,8 +143,8 @@
     function applyStrings() {
       const S = ARPGDEX.S;
       const title = document.getElementById('page-title');
-      if (title && S(48)) title.innerHTML = S(48);
-      const map = { 'lbl-item':49, 'lbl-type':11, 'lbl-rarity':9, 'lbl-getway':56, 'lbl-desc':55 };
+      if (title && S(47)) title.innerHTML = S(47);
+      const map = { 'lbl-item':57, 'lbl-type':11, 'lbl-rarity':9, 'lbl-getway':56, 'lbl-desc':55 };
       for (const [id, sid] of Object.entries(map)) {
         const el = document.getElementById(id);
         if (el && S(sid)) el.innerHTML = S(sid);
