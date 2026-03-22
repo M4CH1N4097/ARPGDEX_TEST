@@ -13,7 +13,9 @@ export const SITE_CONFIG = { name: 'ARPGDEX', sub: '', heroImage: '', discordLin
 export async function loadMenu() {
   try {
     await ARPGDEX.loadStrings();
+    console.log('[ARPGDEX] 스트링 로드됨, 개수:', Object.keys(ARPGDEX._strings).length);
     const rows = await ARPGDEX.importSheet('MenuSet');
+    console.log('[ARPGDEX] MenuSet 행 수:', rows.length, '첫행:', JSON.stringify(rows[0]));
     if (!rows.length) throw new Error('empty');
 
     const items = rows
