@@ -11,7 +11,7 @@
   <div data-include="includes/header.html"></div>
   <div id="main-container">
     <div class="page-header-card">
-      <h2><a href="staff.html">Staff</a></h2>
+      <h2><a href="staff.html" id="page-title">Staff</a></h2>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;" class="fade-in" id="staff-grid"></div>
     <div class="empty-state hidden" id="empty-state"><i class="fas fa-users"></i><p>운영진 정보가 없습니다.</p></div>
@@ -31,6 +31,7 @@
     let filtered = [];
 
     let ROLE_MAP = {};
+    let USER_ROLE_MAP = {};  // { uid → roleId }
 
     function roleIconHTML(roleId) {
       if (!roleId) return '';
@@ -43,11 +44,17 @@
 
     async function loadData() {
       await ARPGDEX.loadStrings();
-      const [rows, rawRoles] = await Promise.all([
+
+      const title = document.getElementById('page-title');
+      if (title && ARPGDEX.S(52)) title.innerHTML = ARPGDEX.S(52);
+
+      const [rows, rawRoles, rawUsers] = await Promise.all([
         ARPGDEX.importSheet('Staff'),
         ARPGDEX.importSheet('Role'),
+        ARPGDEX.importSheet('UserInventory'),
       ]);
 
+      // Role 맵
       for (const row of (rawRoles || [])) {
         const id = String(row['id'] || '').trim();
         if (!id) continue;
@@ -59,16 +66,26 @@
         };
       }
 
+      // UserInventory → uid: roleId 맵
+      for (const row of (rawUsers || [])) {
+        const uid    = String(row['discorduserid'] || '').trim();
+        const roleId = String(row['role']          || '').trim();
+        if (uid) USER_ROLE_MAP[uid] = roleId;
+      }
+
       STAFF = rows
         .filter(r => !ARPGDEX.toBool(r['hide']))
-        .map(r => ({
-          uid:         String(r['discorduserid'] || '').trim(),
-          discordId:   String(r['discordid']     || '').trim(),
-          username:    String(r['username']       || '').trim(),
-          roleId:      String(r['role']          || '').trim(),
-          information: String(r['information']    || '').trim(),
-          avatar:      driveImg(r['avatar']       || ''),
-        }))
+        .map(r => {
+          const uid = String(r['discorduserid'] || '').trim();
+          return {
+            uid,
+            discordId:   String(r['discordid']  || '').trim(),
+            username:    String(r['username']    || '').trim(),
+            roleId:      USER_ROLE_MAP[uid]      || '',
+            information: String(r['information'] || '').trim(),
+            avatar:      driveImg(r['avatar']    || ''),
+          };
+        })
         .filter(r => r.username);
 
       filtered = [...STAFF];
