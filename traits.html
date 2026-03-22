@@ -143,7 +143,7 @@
       ]);
 
       TRAIT_DATA = rawTraits
-        .filter(r => !ARPGDEX.toBool(r['hide']))
+        .filter(r => !ARPGDEX.toBool(r['hide']) && Number(r['id']) !== 0 && r['id'] !== '')
         .map(r => ({
           id:          String(r['id'] || ''),
           name:        ARPGDEX.S(Number(r['traitname'] || 0)) || r['traitname'] || '',
@@ -183,10 +183,27 @@
       const S   = ARPGDEX.S;
       const all = S(36) || '전체';
 
-      // 종족 탭
+      // 실제 데이터에 있는 값 집합
+      const usedSpecies   = new Set(TRAIT_DATA.map(t => t.species));
+      const usedTypes     = new Set(TRAIT_DATA.map(t => t.traittype));
+      const usedRarities  = new Set(TRAIT_DATA.map(t => t.rarity));
+
+      // 공통(0)이 실제로 있을 때만 포함
+      const hasCommon = usedSpecies.has('0');
+
+      // 종족 탭 — 실제 데이터 있는 종족만
       const speciesTabs = document.getElementById('species-tabs');
       speciesTabs.innerHTML = `<button class="cat-tab active" data-species="all">${all}</button>`;
+      if (hasCommon) {
+        const btn = document.createElement('button');
+        btn.className = 'cat-tab';
+        btn.dataset.species = '0';
+        btn.innerHTML = OPT.species['0'] || S(54) || '공통';
+        speciesTabs.appendChild(btn);
+      }
       for (const [val, label] of Object.entries(OPT.species)) {
+        if (val === '0') continue; // 공통은 위에서 처리
+        if (!usedSpecies.has(val)) continue; // 데이터 없으면 스킵
         const btn = document.createElement('button');
         btn.className = 'cat-tab';
         btn.dataset.species = val;
@@ -202,10 +219,11 @@
         });
       });
 
-      // TraitType 탭
+      // TraitType 탭 — 실제 데이터 있는 타입만
       const typeTabs = document.getElementById('type-tabs');
       typeTabs.innerHTML = `<button class="cat-tab active" data-type="all">${all}</button>`;
       for (const tt of OPT.traitTypes) {
+        if (!usedTypes.has(tt.value)) continue;
         const btn = document.createElement('button');
         btn.className = 'cat-tab';
         btn.dataset.type = tt.value;
@@ -221,10 +239,11 @@
         });
       });
 
-      // Rarity 셀렉트
+      // Rarity 셀렉트 — 실제 데이터 있는 등급만
       const rarSel = document.getElementById('filter-rarity');
       rarSel.innerHTML = `<option value="all">${S(9) || '등급'}: ${all}</option>`;
       for (const [val, label] of Object.entries(OPT.rarity)) {
+        if (!usedRarities.has(val)) continue;
         rarSel.innerHTML += `<option value="${val}">${label}</option>`;
       }
 
