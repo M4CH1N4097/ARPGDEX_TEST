@@ -5,6 +5,7 @@
   <title>ARPGDEX — Player Inventories</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
   <link rel="stylesheet" href="arpgdex.css">
+  <link rel="icon" href="data:,">
 </head>
 <body>
   <div data-include="includes/header.html"></div>
@@ -54,10 +55,10 @@
   <script type="module">
     import { ARPGDEX } from './js/utils.js';
     const PLAYERS = [
-      { username: 'Alice', items: [{name:'Gold Coin',qty:150,image:'https://picsum.photos/seed/i1/200/200'},{name:'Lucky Egg',qty:2,image:'https://picsum.photos/seed/i4/200/200'}], designs: ['CHA-001'], logs: [{timestamp:'2024-03-01',reason:'Gold Coin +50 (Event)'}] },
-      { username: 'Bob', items: [{name:'Common MYO Slot',qty:1,image:'https://picsum.photos/seed/i2/200/200'}], designs: ['CHA-002'], logs: [{timestamp:'2024-02-15',reason:'MYO Slot +1 (Purchase)'}] },
-      { username: 'Carol', items: [{name:'Trait Potion',qty:3,image:'https://picsum.photos/seed/i5/200/200'}], designs: ['CHA-003'], logs: [] },
-      { username: 'Dave', items: [], designs: ['CHA-004'], logs: [] },
+      { username: 'Alice', discordId: 'alice_discord', items: [{name:'Gold Coin',qty:150,image:'https://picsum.photos/seed/i1/200/200'},{name:'Lucky Egg',qty:2,image:'https://picsum.photos/seed/i4/200/200'}], designs: ['CHA-001'], logs: [{timestamp:'2024-03-01',reason:'Gold Coin +50 (Event)'}] },
+      { username: 'Bob',   discordId: 'bob_discord',   items: [{name:'Common MYO Slot',qty:1,image:'https://picsum.photos/seed/i2/200/200'}], designs: ['CHA-002'], logs: [{timestamp:'2024-02-15',reason:'MYO Slot +1 (Purchase)'}] },
+      { username: 'Carol', discordId: 'carol_discord', items: [{name:'Trait Potion',qty:3,image:'https://picsum.photos/seed/i5/200/200'}], designs: ['CHA-003'], logs: [] },
+      { username: 'Dave',  discordId: '',              items: [], designs: ['CHA-004'], logs: [] },
     ];
     const ML = { 'CHA-001': 'https://picsum.photos/seed/c1/200/200', 'CHA-002': 'https://picsum.photos/seed/c2/200/200', 'CHA-003': 'https://picsum.photos/seed/c3/200/200', 'CHA-004': 'https://picsum.photos/seed/c4/200/200' };
 
@@ -67,8 +68,10 @@
         <div class="card" style="cursor:pointer;transition:border-color .2s;" onclick="showProfile('${p.username}')"
           onmouseover="this.style.borderColor='var(--border-strong)'" onmouseout="this.style.borderColor=''">
           <div class="card-body" style="padding:.9rem 1.1rem;">
-            <div style="font-family:var(--font-heading);font-size:.9rem;">${p.username}</div>
-            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">${p.designs.length} 디자인</div>
+            <div style="font-family:var(--font-heading);font-size:.9rem;">
+              <i class="fas fa-user" style="font-size:.72rem;margin-right:.35rem;opacity:.7;"></i>${p.username}
+            </div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem;">${p.discordId || ''}</div>
           </div>
         </div>`).join('');
     }
