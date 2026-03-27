@@ -3,7 +3,6 @@
 /* ============================================================= */
 import { ARPGDEX } from './utils.js';
 
-const SHEET_ID = "1Sy_IFOM7aQz07_CjzEwteNy1h1IyMa1n3JGKjHqAJtM";
 
 /* ---- 전역 데이터 -------------------------------------------- */
 export const MENU_GROUPS = [];
@@ -62,7 +61,7 @@ export async function loadMenu() {
 export async function loadSiteConfig() {
   try {
     await ARPGDEX.loadStrings();
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F28:F38`;
+    const url = `https://docs.google.com/spreadsheets/d/${ARPGDEX.sheetId}/gviz/tq?tqx=out:json&sheet=MainOption&range=F28:F38`;
     const text = await fetch(url).then(r => r.text());
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const rows = json?.table?.rows || [];
@@ -130,7 +129,7 @@ function buildNav() {
 /* ---- Favicon 로드 (MainOption!F38) -------------------------- */
 async function loadFavicon() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=MainOption&range=F38`;
+    const url = `https://docs.google.com/spreadsheets/d/${ARPGDEX.sheetId}/gviz/tq?tqx=out:json&sheet=MainOption&range=F38`;
     const text = await fetch(url).then(r => r.text());
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const rawUrl = json?.table?.rows?.[0]?.c?.[0]?.v || '';
